@@ -31,12 +31,13 @@ extern TraceUI *traceUI;
 // in TraceGLWindow, for example.
 bool debugMode = false;
 
+// For use in threading
 struct WorkUnit {
     WorkUnit *next;
     int minX, maxX;
     int minY, maxY;
 };
-std::mutex lock;
+std::mutex l;
 WorkUnit *head = nullptr;
 std::atomic<int> done;
 
@@ -228,10 +229,11 @@ void RayTracer::traceSetup(int w, int h) {
     thresh = traceUI->getThreshold();
     samples = traceUI->getSuperSamples();
     aaThresh = traceUI->getAaThreshold();
-
-    // YOUR CODE HERE
-    // FIXME: Additional initializations
+    done = 0;
+    workers = new std::thread*[threads];
 }
+
+constexpr int granularity = 32;
 
 /*
  * RayTracer::traceImage
@@ -244,40 +246,50 @@ void RayTracer::traceSetup(int w, int h) {
  *
  */
 void RayTracer::traceImage(int w, int h) {
-    // Always call traceSetup before rendering anything.
     traceSetup(w, h);
 
-    for (int y = 0; y < h; y++)
-        for (int x = 0; x < w; x++)
-            tracePixel(x, y);
+    for (int y = 0; y < h; y += granularity) {
+        for (int x = 0; x < w; x += granularity) {
+            auto *work = new WorkUnit;
+            work->minX = x;
+            work->minY = y;
+            work->maxX = std::min(x + granularity, w);
+            work->maxY = std::min(y + granularity, h);
+            work->next = head;
+            head = work;
+        }
+    }
 
-    // YOUR CODE HERE
-    // FIXME: Start one or more threads for ray tracing
-    //
-    // TIPS: Ideally, the traceImage should be executed asynchronously,
-    //       i.e. returns IMMEDIATELY after working threads are launched.
-    //
-    //       An asynchronous traceImage lets the GUI update your results
-    //       while rendering.
+    for (int i = 0; i < threads; i++) {
+        workers[i] = new std::thread([&, i] {
+            while (true) {
+                WorkUnit *work;
+                l.lock();
+                if (head) {
+                    work = head;
+                    head = head->next;
+                    l.unlock();
+                } else {
+                    l.unlock();
+                    break;
+                }
+                for (int y = work->minY; y < work->maxY; y++)
+                    for (int x = work->minX; x < work->maxX; x++)
+                        tracePixel(x, y);
+                delete work;
+            }
+            done++;
+        });
+    }
 }
 
 bool RayTracer::checkRender() {
-    // YOUR CODE HERE
-    // FIXME: Return true if tracing is done.
-    //        This is a helper routine for GUI.
-    //
-    // TIPS: Introduce an array to track the status of each worker thread.
-    //       This array is maintained by the worker threads.
-    return true;
+    return done == threads;
 }
 
 void RayTracer::waitRender() {
-    // YOUR CODE HERE
-    // FIXME: Wait until the rendering process is done.
-    //        This function is essential if you are using an asynchronous
-    //        traceImage implementation.
-    //
-    // TIPS: Join all worker threads here.
+    for (int i = 0; i < threads; i++)
+        workers[i]->join();
 }
 
 

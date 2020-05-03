@@ -68,6 +68,8 @@ private:
 
 	bool m_bBufferReady;
 
+	std::thread **workers;
+
 };
 
 #endif // __RAYTRACER_H__
