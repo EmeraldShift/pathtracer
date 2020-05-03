@@ -44,7 +44,7 @@ std::atomic<int> done;
 constexpr int DEPTH_LIMIT = 4;
 constexpr int SUPER_MAX_DEPTH = 8;
 constexpr int SUPERSAMPLE = 10;
-constexpr int SAMPLES = 2;
+constexpr int SAMPLES = 128;
 
 // Trace a top-level ray through pixel(i,j), i.e. normalized window coordinates (x,y),
 // through the projection plane, and out into the scene.  All we do is
@@ -103,11 +103,12 @@ glm::dvec3 RayTracer::tracePixel(int i, int j) {
     double y = double(j) / double(buffer_height);
 
     unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
-    col = trace(x, y);
-
-    pixel[0] = (int) (255.0 * col[0]);
-    pixel[1] = (int) (255.0 * col[1]);
-    pixel[2] = (int) (255.0 * col[2]);
+    for (int i = 0; i < SAMPLES; i++) {
+        col += trace(x, y) / (double)SAMPLES;
+        pixel[0] = (int) (255.0 * col[0]);
+        pixel[1] = (int) (255.0 * col[1]);
+        pixel[2] = (int) (255.0 * col[2]);
+    }
     return col;
 }
 
@@ -135,7 +136,7 @@ glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth, doub
         rr_prob = 1;
     }
 
-    glm::dvec3 rad, w;
+    glm::dvec3 rad(0), w(0);
 
     if (glm::length2(i.getMaterial().kd(i)) > RAY_EPSILON) {
         auto basis = getBasis(i.getN());
@@ -144,7 +145,7 @@ glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth, doub
         rad += (i.getMaterial().kd(i) * traceRay(rr, thresh, depth - 1, t)) / rr_prob;
     }
 
-    return i.getMaterial().ke(i) * 32.0 + rad;
+    return i.getMaterial().ke(i) + rad;
 }
 
 RayTracer::RayTracer()
@@ -230,10 +231,10 @@ void RayTracer::traceSetup(int w, int h) {
     samples = traceUI->getSuperSamples();
     aaThresh = traceUI->getAaThreshold();
     done = 0;
-    workers = new std::thread*[threads];
+    workers = new std::thread *[threads];
 }
 
-constexpr int granularity = 32;
+constexpr int granularity = 128;
 
 /*
  * RayTracer::traceImage
