@@ -141,7 +141,7 @@ glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth, doub
         auto basis = getBasis(i.getN());
         auto refl = randomVecFromHemisphere(i.getN());
         ray rr(hitOuter, refl, glm::dvec3());
-        rad += (i.getMaterial().kd(i) * traceRay(rr, thresh, depth + 1, t)) / rr_prob;
+        rad += (i.getMaterial().kd(i) * traceRay(rr, thresh, depth - 1, t)) / rr_prob;
     }
 
     return i.getMaterial().ke(i) * 32.0 + rad;
