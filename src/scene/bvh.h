@@ -120,8 +120,6 @@ static Cluster<Obj> *genCluster(std::vector<Obj> &xvec,
     c->right = genCluster<Obj, spreadFunction>(xright, yright, zright);
     c->bbox = BoundingBox(glm::min(c->left->bbox.getMin(), c->right->bbox.getMin()),
                           glm::max(c->left->bbox.getMax(), c->right->bbox.getMax()));
-    std::cout << "generated: bounds = (" << c->bbox.getMin()[0] << ", " << c->bbox.getMin()[1] << ", " << c->bbox.getMin()[2] << "),("
-    << c->bbox.getMax()[0] << ", " << c->bbox.getMax()[1] << ", " << c->bbox.getMax()[2] << ")" << std::endl;
     return c;
 }
 

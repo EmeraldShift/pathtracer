@@ -62,7 +62,6 @@ int TraceGLWindow::handle(int event)
 
 void TraceGLWindow::draw()
 {
-    std::cout << "draw the iwndo" << std::endl;
 	if(!valid())
 	{
 		glClearColor(0.7f, 0.7f, 0.7f, 1.0);
@@ -81,7 +80,6 @@ void TraceGLWindow::draw()
 	unsigned char* buf;
 	raytracer->getBuffer(buf, m_nDrawWidth, m_nDrawHeight);
 
-	std::cout << "got abuffer " << buf << " and print !!" << std::endl;
 	if ( buf ) {
 		// just copy image to GLwindow conceptually
 		glRasterPos2i( 0, 0 );
@@ -96,7 +94,6 @@ void TraceGLWindow::draw()
 
 void TraceGLWindow::refresh()
 {
-    std::cout << "redraw it " << std::endl;
 	redraw();
 }
 
