@@ -39,7 +39,7 @@ public:
 	virtual bool intersectLocal(ray& r, isect& i ) const;
 	virtual bool hasBoundingBoxCapability() const { return true; }
 
-    virtual BoundingBox ComputeLocalBoundingBox()
+    virtual BoundingBox computeLocalBoundingBox()
     {
         BoundingBox localbounds;
 		double biggest_radius = (b_radius > t_radius)?(b_radius):(t_radius);

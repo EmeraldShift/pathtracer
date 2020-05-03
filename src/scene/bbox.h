@@ -60,6 +60,7 @@ public:
 	// intersection
 	// in tMax and return true, else return false.
 	bool intersect(const ray& r, double& tMin, double& tMax) const;
+	bool intersect(const ray &r, double tMax = 1.0e308) const;
 
 	void operator=(const BoundingBox& target);
 	double area();

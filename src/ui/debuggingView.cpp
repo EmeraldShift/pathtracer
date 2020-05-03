@@ -470,7 +470,7 @@ void DebuggingView::drawRays()
 	for (std::vector<std::pair<ray *, isect *>>::const_iterator rayItr =
 	             raytracer->getScene().intersectCache.begin();
 	     rayItr != raytracer->getScene().intersectCache.end(); ++rayItr) {
-		switch (rayItr->first->type()) {
+		switch (rayItr->first->getType()) {
 			case ray::VISIBILITY:
 				if (!m_showVisibilityRays)
 					continue;

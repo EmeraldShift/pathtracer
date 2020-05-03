@@ -41,7 +41,6 @@ public:
 	int getLeafSize() const { return m_nLeafSize; }
 	int getFilterWidth() const { return m_nFilterWidth; }
 	int getThreads() const { return m_threads; }
-	bool aaSwitch() const { return m_antiAlias; }
 	bool kdSwitch() const { return m_kdTree; }
 	bool shadowSw() const { return m_shadows; }
 	bool smShadSw() const { return m_smoothshade; }

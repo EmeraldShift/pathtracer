@@ -38,14 +38,13 @@ public:
 	double aspectRatio();
 
 	void traceImage(int w, int h);
-	int aaImage();
 	bool checkRender();
 	void waitRender();
 
 	void traceSetup(int w, int h);
 
 	bool loadScene(const char* fn);
-	bool sceneLoaded() { return scene != 0; }
+	bool sceneLoaded() { return scene != nullptr; }
 
 	void setReady(bool ready) { m_bBufferReady = ready; }
 	bool isReady() const { return m_bBufferReady; }

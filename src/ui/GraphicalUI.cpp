@@ -311,44 +311,6 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 		print(buffer, "Time: %.2f sec, Rays: %u, Aa: none", t_trace, imageRays);
 		pUI->m_traceGlWindow->label(buffer);
 		pUI->m_traceGlWindow->refresh();
-		if (pUI->aaSwitch() && !stopTrace)
-		{
-			clock_t aaStart, aaTime;
-			auto t_aaStart = std::chrono::high_resolution_clock::now();
-			auto t_total = std::chrono::duration<double, std::ratio<1>>(t_now - t_start).count();
-			aaStart = now = prev = clock();
-			int aaPixels = pUI->raytracer->aaImage();
-			while (!pUI->raytracer->checkRender())
-			{
-				// check for input and refresh view every so often while tracing
-				std::this_thread::sleep_for(std::chrono::milliseconds(std::min(intervalMS, (clock_t)MAX_INTERVAL)));
-				now = clock();
-				aaTime = now - aaStart;
-				t_now = std::chrono::high_resolution_clock::now();
-				t_elapsed = std::chrono::duration<double, std::ratio<1>>(t_now - t_aaStart).count();
-				t_total = std::chrono::duration<double, std::ratio<1>>(t_now - t_start).count();
-				if ((now - prev)/CLOCKS_PER_SEC * 1000 >= intervalMS)
-				{
-					print(buffer, "Trace: %.2f, Aa: %.2f, Total: %.2f, aaRays: %d",
-					      t_trace, t_elapsed, t_total, TraceUI::getCount()); 
-					pUI->m_traceGlWindow->label(buffer);
-					pUI->m_traceGlWindow->refresh();
-					prev = now;
-				}
-				// look for input and refresh window
-				Fl::wait(0);			
-				if (Fl::damage()) { Fl::flush(); }
-			}
-			aaTime = clock() - aaStart;
-			t_now = std::chrono::high_resolution_clock::now();
-			t_elapsed = std::chrono::duration<double, std::ratio<1>>(t_now - t_aaStart).count();
-			t_total = std::chrono::duration<double, std::ratio<1>>(t_now - t_start).count();
-			int aaRays = TraceUI::resetCount();
-			print(buffer, "Trace: %.2f, Aa: %.2f, Total: %.2f, Rays: %u, %u, %u",
-			      t_trace, t_elapsed, t_total, imageRays, aaRays, imageRays + aaRays);
-			pUI->m_traceGlWindow->label(buffer);
-			pUI->m_traceGlWindow->refresh();
-		}
 /*
 		pUI->raytracer->setThreshold(pUI->getThreshold());
 
