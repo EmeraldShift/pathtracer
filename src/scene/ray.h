@@ -10,10 +10,12 @@
 // who the hell cares if my identifiers are longer than 255 characters:
 #pragma warning(disable : 4786)
 
+#include "GL/gl.h"
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <memory>
 #include "material.h"
+
 
 class SceneObject;
 
