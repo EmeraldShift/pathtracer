@@ -106,6 +106,7 @@ protected:
 	int m_nTreeDepth = 15;    // maximum kdTree depth
 	int m_nLeafSize = 10;     // target number of objects per leaf
 	int m_nFilterWidth = 1;   // width of cubemap filter
+	bool m_gpu = false;
 
 	static int rayCount[MAX_THREADS]; // Ray counter
 
