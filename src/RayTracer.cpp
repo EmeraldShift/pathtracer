@@ -351,6 +351,12 @@ bool RayTracer::checkRender() {
 }
 
 
+void RayTracer::waitRender() {
+    if (!m_gpu)
+        for (int i = 0; i < threads; i++)
+            workers[i]->join();
+
+}
 
 glm::dvec3 RayTracer::getPixel(int i, int j) {
     unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;

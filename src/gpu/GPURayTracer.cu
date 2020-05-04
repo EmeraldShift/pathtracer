@@ -16,15 +16,7 @@ void RayTracer::traceImageGPU(int w, int h) {
     //launch tracer kernels
     cuda_hello<<<num_blocks, block_size>>>();
 
-    //render
+    //sync
+    cudaDeviceSynchronize();
 }
 
-
-void RayTracer::waitRender() {
-    if (m_gpu)
-        cudaDeviceSynchronize();
-    else
-        for (int i = 0; i < threads; i++)
-            workers[i]->join();
-
-}

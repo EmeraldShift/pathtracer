@@ -2,6 +2,8 @@
 #define __cuda_hello__
 #include <stdio.h>
 
+#define GLM_FORCE_CUDA
+
 // printf() is only supported
 // for devices of compute capability 2.0 and higher
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 200)
