@@ -37,7 +37,7 @@ message(STATUS "ray added, files ${src}")
 
 #handles suppressing glm warnings that nvcc gives
 enable_language(CUDA)
-set(CUDA_NVCC_FLAGS -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored)
+#set(CUDA_NVCC_FLAGS -w -Xcudafe="--diag_suppress=2886" --diag_suppress=esa_on_defaulted_function_ignored)
 set(CUDA_SEPARABLE_COMPILATION ON)
 set(CUDA_HOST_COMPILATION_CPP ON)
 
