@@ -44,7 +44,6 @@ std::atomic<int> done;
 constexpr int DEPTH_LIMIT = 4;
 constexpr int SUPER_MAX_DEPTH = 8;
 constexpr int SUPERSAMPLE = 10;
-constexpr int SAMPLES = 128;
 
 // Trace a top-level ray through pixel(i,j), i.e. normalized window coordinates (x,y),
 // through the projection plane, and out into the scene.  All we do is
@@ -104,6 +103,7 @@ glm::dvec3 RayTracer::tracePixel(int i, int j) {
     double x = double(i);
     double y = double(j);
     auto sum = glm::dvec3();
+    std::cout << "using " << samples << " samples" << std::endl;
     for (auto xx = x - 0.5 + 1.0 / (2.0 * samples); xx < x + 0.5; xx += 1.0 / samples)
         for (auto yy = y - 0.5 + 1.0 / (2.0 * samples); yy < y + 0.5; yy += 1.0 / samples)
             sum += trace(xx / (double)buffer_width, yy / (double)buffer_height);

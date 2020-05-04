@@ -515,12 +515,11 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_aaSamplesSlider->labelfont(FL_COURIER);
 	m_aaSamplesSlider->labelsize(12);
 	m_aaSamplesSlider->minimum(1);
-	m_aaSamplesSlider->maximum(8);
+	m_aaSamplesSlider->maximum(12);
 	m_aaSamplesSlider->step(1);
 	m_aaSamplesSlider->value(m_nSuperSamples);
 	m_aaSamplesSlider->align(FL_ALIGN_RIGHT);
 	m_aaSamplesSlider->callback(cb_aaSamplesSlides);
-	if (!m_antiAlias) m_aaSamplesSlider->deactivate();
 
 	// install aathreshold slider
 	m_aaThreshSlider = new Fl_Value_Slider(95, 237, 180, 20, "Supersample\nThreshold (x 0.001)");
