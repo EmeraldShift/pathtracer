@@ -1,4 +1,8 @@
 SET(pwd ${CMAKE_CURRENT_LIST_DIR})
+cmake_minimum_required(VERSION 3.8)
+find_package(CUDA QUIET REQUIRED)
+
+#project (ray LANGUAGES CUDA)
 
 UNSET(src)
 
@@ -8,7 +12,6 @@ UNSET(src)
 #      FILE(STRINGS CMakeLists.sources src)
 #ENDIF()
  
-find_package(CUDA QUIET REQUIRED)
 # By default, source files are added automatically
 IF (NOT src)
 	AUX_SOURCE_DIRECTORY(${pwd} src)
@@ -31,6 +34,12 @@ ELSE ()
 ENDIF (WIN32)
 
 message(STATUS "ray added, files ${src}")
+
+#handles suppressing glm warnings that nvcc gives
+enable_language(CUDA)
+set(CUDA_NVCC_FLAGS -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored)
+set(CUDA_SEPARABLE_COMPILATION ON)
+set(CUDA_HOST_COMPILATION_CPP ON)
 
 target_link_libraries(ray ${OPENGL_gl_LIBRARY})
 #SET(FLTK_SKIP_FLUID TRUE)
