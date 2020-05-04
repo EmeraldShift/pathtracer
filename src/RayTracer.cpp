@@ -204,6 +204,10 @@ RayTracer::RayTracer()
         : scene(nullptr), buffer(0), thresh(0), buffer_width(0), buffer_height(0), m_bBufferReady(false) {
 }
 
+RayTracer::RayTracer(bool gpu)
+        : scene(nullptr), buffer(0), thresh(0), buffer_width(0), buffer_height(0), m_bBufferReady(false), m_gpu(gpu) {
+}
+
 RayTracer::~RayTracer() {
 }
 
@@ -346,10 +350,6 @@ bool RayTracer::checkRender() {
     return threadsDone == threads;
 }
 
-void RayTracer::waitRender() {
-    for (int i = 0; i < threads; i++)
-        workers[i]->join();
-}
 
 
 glm::dvec3 RayTracer::getPixel(int i, int j) {

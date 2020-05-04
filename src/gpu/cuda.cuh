@@ -8,5 +8,6 @@
 #define printf(f, ...) ((void)(f, __VA_ARGS__),0)
 #endif
 
+__global__ void cuda_hello();
 void print_from_gpu();
 #endif

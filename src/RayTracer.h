@@ -26,6 +26,7 @@ public:
 class RayTracer {
 public:
 	RayTracer();
+	RayTracer(bool);
 	~RayTracer();
 
 	glm::dvec3 tracePixel(int i, int j);
@@ -38,6 +39,7 @@ public:
 	double aspectRatio();
 
 	void traceImage(int w, int h);
+	void traceImageGPU(int w, int h);
 	bool checkRender();
 	void waitRender();
 
@@ -67,6 +69,7 @@ private:
 	std::unique_ptr<Scene> scene;
 
 	bool m_bBufferReady;
+	bool m_gpu;
 
 	std::thread **workers;
 

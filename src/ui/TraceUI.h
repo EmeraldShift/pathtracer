@@ -31,6 +31,7 @@ public:
 	void useCubeMap(bool b) { m_usingCubeMap = b; }
 
 	// accessors:
+	int getGPU() const { return m_gpu; }
 	int getSize() const { return m_nSize; }
 	int getDepth() const { return m_nDepth; }
 	int getBlockSize() const { return m_nBlockSize; }

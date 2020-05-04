@@ -87,8 +87,11 @@ int CommandLineUI::run()
 		clock_t start, end;
 		start = clock();
 
-		//TODO insert here if GPU, trace on GPU
-		raytracer->traceImage(width, height);
+		if (m_gpu){
+			raytracer->traceImageGPU(width, height);
+		} else{
+			raytracer->traceImage(width, height);
+		}
 		raytracer->waitRender();
 
 		end = clock();

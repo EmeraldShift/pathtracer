@@ -4,7 +4,6 @@
 
 #include "RayTracer.h"
 #include "ui/CommandLineUI.h"
-#include "gpu/cuda.h"
 
 using namespace std;
 
@@ -34,8 +33,7 @@ int main(int argc, char** argv)
 // #endif
 	}
 
-	theRayTracer = new RayTracer();
-	print_from_gpu();
+	theRayTracer = new RayTracer(traceUI->getGPU());
 	traceUI->setRayTracer(theRayTracer);
 	return traceUI->run();
 }
