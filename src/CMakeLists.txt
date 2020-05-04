@@ -8,6 +8,7 @@ UNSET(src)
 #      FILE(STRINGS CMakeLists.sources src)
 #ENDIF()
  
+find_package(CUDA QUIET REQUIRED)
 # By default, source files are added automatically
 IF (NOT src)
 	AUX_SOURCE_DIRECTORY(${pwd} src)
@@ -15,12 +16,15 @@ IF (NOT src)
 	AUX_SOURCE_DIRECTORY(${pwd}/parser src)
 	AUX_SOURCE_DIRECTORY(${pwd}/scene src)
 	AUX_SOURCE_DIRECTORY(${pwd}/SceneObjects src)
-	AUX_SOURCE_DIRECTORY(${pwd}/ui src)
+	AUX_SOURCE_DIRECTORY(${pwd}/ui src)	
+	#AUX_SOURCE_DIRECTORY(${pwd}/gpu src)
 	IF (WIN32)
 		AUX_SOURCE_DIRECTORY(${pwd}/win32 src)
 	ENDIF (WIN32)
 ENDIF(NOT src)
-add_executable(ray ${src})
+
+file(GLOB CUDA_FILES "gpu/*.cu" "gpu/*.h")
+cuda_add_executable(ray ${src} ${CUDA_FILES})
 
 message(STATUS "ray added, files ${src}")
 
