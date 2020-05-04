@@ -1,6 +1,6 @@
-#ifndef COMMAND_LINE_ONLY
-#include "ui/GraphicalUI.h"
-#endif
+// #ifndef COMMAND_LINE_ONLY
+// #include "ui/GraphicalUI.h"
+// #endif
 
 #include "RayTracer.h"
 #include "ui/CommandLineUI.h"
@@ -24,13 +24,13 @@ int main(int argc, char** argv)
 		// text mode
 		traceUI = new CommandLineUI(argc, argv);
 	} else {
-#ifdef COMMAND_LINE_ONLY
+// #ifdef COMMAND_LINE_ONLY
 		// still text mode
 		traceUI = new CommandLineUI(argc, argv);
-#else
-		// graphics mode
-		traceUI = new GraphicalUI();
-#endif
+// #else
+// 		// graphics mode
+// 		traceUI = new GraphicalUI();
+// #endif
 	}
 
 	theRayTracer = new RayTracer();
