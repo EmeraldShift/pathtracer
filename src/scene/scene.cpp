@@ -165,8 +165,8 @@ bool Scene::intersect(ray &r, isect &i) {
     }
 
     // if debugging,
-    if (TraceUI::m_debug)
-        intersectCache.emplace_back(new ray(r), new isect(i));
+    // if (TraceUI::m_debug)
+    //     intersectCache.emplace_back(new ray(r), new isect(i));
     return have_one;
 }
 

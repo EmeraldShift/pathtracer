@@ -82,8 +82,8 @@ static glm::dvec3 randomVecFromHemisphere(glm::dvec3 normal) {
 
 glm::dvec3 RayTracer::trace(double x, double y) {
     // Clear out the ray cache in the scene for debugging purposes,
-    if (TraceUI::m_debug)
-        scene->intersectCache.clear();
+    // if (TraceUI::m_debug)
+    //     scene->intersectCache.clear();
 
     ray r(glm::dvec3(0, 0, 0), glm::dvec3(0, 0, 0), glm::dvec3(1, 1, 1), ray::VISIBILITY);
     scene->getCamera().rayThrough(x, y, r);
