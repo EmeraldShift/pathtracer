@@ -1,6 +1,6 @@
 #pragma warning (disable: 4786)
 
-#include <GL/gl.h>
+#include "gl.h"
 #include <GL/glu.h>
 #include <math.h>
 

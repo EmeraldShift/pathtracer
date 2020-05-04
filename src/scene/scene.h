@@ -21,7 +21,7 @@
 #include "ray.h"
 #include "bvh.h"
 
-#include "GL/gl.h"
+#include "../gl.h"
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include "GL/gl.h"
+#include "../gl.h"
 #include <glm/vec3.hpp>
 
 class TextureMap;

@@ -38,8 +38,10 @@ struct WorkUnit {
     int minY, maxY;
 };
 std::mutex l;
+int totalWork;
 WorkUnit *head = nullptr;
-std::atomic<int> done;
+std::atomic<int> workDone;
+std::atomic<int> threadsDone;
 
 constexpr int DEPTH_LIMIT = 4;
 constexpr int SUPER_MAX_DEPTH = 8;
@@ -105,15 +107,9 @@ glm::dvec3 RayTracer::tracePixel(int i, int j) {
     double y = double(j);
     auto sum = glm::dvec3();
     for (auto xx = x - 0.5 + 1.0 / (2.0 * samples); xx < x + 0.5; xx += 1.0 / samples)
-        for (auto yy = y - 0.5 + 1.0 / (2.0 * samples); yy < y + 0.5; yy += 1.0 / samples) {
-            auto val = trace(xx / (double) buffer_width, yy / (double) buffer_height);
-            if (TraceUI::m_debug)
-                std::cout << "(" << val[0] << ", " << val[1] << ", " << val[2] << ")" << std::endl;
-            sum += val;
-        }
+        for (auto yy = y - 0.5 + 1.0 / (2.0 * samples); yy < y + 0.5; yy += 1.0 / samples)
+            sum += trace(xx / (double) buffer_width, yy / (double) buffer_height);
     col = sum / ((double) samples * samples);
-    if (TraceUI::m_debug)
-        std::cout << "final: " << col[0] << ", " << col[1] << ", " << col[2] << std::endl;
 
     pixel[0] = (int) (255.0 * col[0]);
     pixel[1] = (int) (255.0 * col[1]);
@@ -170,8 +166,6 @@ glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth, doub
             rad += w * traceRay(rr, w * thresh, depth - 1, t);
         } else {
             auto dir = glm::normalize(r.getDirection() * ratio - n * (dot * ratio + std::sqrt(cos2t)));
-            if (TraceUI::m_debug)
-                std::cout << "(" << dir[0] << ", " << dir[1] << ", " << dir[2] << std::endl;
             ray rr(hitInner, dir, glm::dvec3());
             double a = n2 - n1;
             double b = n2 + n1;
@@ -288,7 +282,7 @@ void RayTracer::traceSetup(int w, int h) {
     thresh = traceUI->getThreshold();
     samples = traceUI->getSuperSamples();
     aaThresh = traceUI->getAaThreshold();
-    done = 0;
+    threadsDone = 0;
     workers = new std::thread *[threads];
 }
 
@@ -316,6 +310,7 @@ void RayTracer::traceImage(int w, int h) {
             work->maxY = std::min(y + granularity, h);
             work->next = head;
             head = work;
+            totalWork++;
         }
     }
 
@@ -336,14 +331,19 @@ void RayTracer::traceImage(int w, int h) {
                     for (int x = work->minX; x < work->maxX; x++)
                         tracePixel(x, y);
                 delete work;
+
+                // Announce progress
+                int done;
+                if ((done = ++workDone) % (std::max(1, totalWork / 20)) == 0)
+                    std::cout << done * 100 / totalWork << "%" << std::endl;
             }
-            done++;
+            threadsDone++;
         });
     }
 }
 
 bool RayTracer::checkRender() {
-    return done == threads;
+    return threadsDone == threads;
 }
 
 void RayTracer::waitRender() {

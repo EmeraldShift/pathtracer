@@ -9,7 +9,7 @@ using std::max;
 
 #include "scene.h"
 #include "../ui/TraceUI.h"
-#include <GL/gl.h>
+#include "../gl.h"
 
 class Light
 	: public SceneElement

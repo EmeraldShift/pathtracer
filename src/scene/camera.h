@@ -2,7 +2,7 @@
 #define CAMERA_H
 
 #include "ray.h"
-#include "GL/gl.h"
+#include "../gl.h"
 #include <glm/vec3.hpp>
 #include <glm/mat3x3.hpp>
 

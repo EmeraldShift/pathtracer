@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GL/gl.h"
+#include "../gl.h"
 #include <set>
 #include <queue>
 #include <iostream>
