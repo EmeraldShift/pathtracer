@@ -140,11 +140,19 @@ glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth, doub
 
     glm::dvec3 rad(0), w(0);
 
+    // Diffuse
     if (glm::length2(i.getMaterial().kd(i)) > RAY_EPSILON) {
         auto basis = getBasis(i.getN());
         auto refl = randomVecFromHemisphere(i.getN());
         ray rr(hitOuter, refl, glm::dvec3());
         rad += (i.getMaterial().kd(i) * traceRay(rr, thresh, depth - 1, t)) / rr_prob;
+    }
+
+    // Specular
+    if (glm::length2(i.getMaterial().kr(i)) > RAY_EPSILON) {
+        auto refl = r.getDirection() - 2.0 * i.getN() * glm::dot(i.getN(), r.getDirection());
+        ray rr(hitOuter, refl, glm::dvec3());
+        rad += (i.getMaterial().kr(i) * traceRay(rr, thresh, depth - 1, t)) / rr_prob;
     }
 
     return i.getMaterial().ke(i) + rad;

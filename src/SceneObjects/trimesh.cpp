@@ -153,23 +153,27 @@ bool TrimeshFace::intersectLocal(ray &r, isect &i) const {
     auto d_z = glm::dot(nInv, d);
     if (p_z < 0 == d_z < 0)
         return false;
+
     auto t = -p_z / d_z;
     if (t > i.getT())
         return false;
+
     auto hit = p + t * d;
     double u = glm::dot(uInv, hit); // p1
     double v = glm::dot(vInv, hit); // p2;
     double w = 1 - u - v; // p0
+
     if (u < 0 || u > 1 || v < 0 || v > 1 || u + v > 1)
         return false;
+
     i.setObject(this);
     i.setT(t);
     if (parent->materials.empty()) {
         i.setMaterial(this->getMaterial());
     } else {
         Material m0 = *parent->materials[ids[0]];
-        Material m1 = *parent->materials[ids[0]];
-        Material m2 = *parent->materials[ids[0]];
+        Material m1 = *parent->materials[ids[1]];
+        Material m2 = *parent->materials[ids[2]];
         m0 = w * m0;
         m1 = u * m1;
         m2 = v * m2;

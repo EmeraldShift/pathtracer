@@ -86,7 +86,8 @@ bool Cone::intersectLocal(ray &r, isect &i) const {
         }
     }
 
-    if (theRoot <= RAY_EPSILON) return false;
+    if (theRoot <= RAY_EPSILON || theRoot > i.getT())
+        return false;
 
     i.setT(theRoot);
     i.setN(glm::normalize(normal));

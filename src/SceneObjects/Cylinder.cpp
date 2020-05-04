@@ -123,6 +123,8 @@ bool Cylinder::intersectCaps(const ray &r, isect &i) const {
     if (t1 >= RAY_EPSILON) {
         glm::dvec3 p(r.at(t1));
         if ((p[0] * p[0] + p[1] * p[1]) <= 1.0) {
+            if (t1 > i.getT())
+                return false;
             i.setT(t1);
             if (dz > 0.0) {
                 // Intersection with cap at z = 0.
@@ -136,6 +138,8 @@ bool Cylinder::intersectCaps(const ray &r, isect &i) const {
 
     glm::dvec3 p(r.at(t2));
     if ((p[0] * p[0] + p[1] * p[1]) <= 1.0) {
+        if (t2 > i.getT())
+            return false;
         i.setT(t2);
         if (dz > 0.0) {
             // Intersection with interior of cap at z = 1.

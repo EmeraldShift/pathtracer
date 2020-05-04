@@ -437,7 +437,7 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_depthSlider->labelfont(FL_COURIER);
 	m_depthSlider->labelsize(12);
 	m_depthSlider->minimum(0);
-	m_depthSlider->maximum(10);
+	m_depthSlider->maximum(120);
 	m_depthSlider->step(1);
 	m_depthSlider->value(m_nDepth);
 	m_depthSlider->align(FL_ALIGN_RIGHT);

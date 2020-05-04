@@ -48,7 +48,8 @@ bool Box::intersectLocal(ray &r, isect &i) const {
 
     }
 
-    if (bestIndex < 0) return false;
+    if (bestIndex < 0 || bestT > i.getT())
+        return false;
 
     i.setT(bestT);
     i.setObject(this);
