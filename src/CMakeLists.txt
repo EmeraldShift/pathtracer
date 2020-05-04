@@ -23,10 +23,12 @@ IF (NOT src)
 	ENDIF (WIN32)
 ENDIF(NOT src)
 
-IF (!WIN32)
+IF (WIN32)
+	cuda_add_executable(ray ${src})
+ELSE ()
 	file(GLOB CUDA_FILES "gpu/*.cu" "gpu/*.h")
-ENDIF (!WIN32)
-cuda_add_executable(ray ${src} ${CUDA_FILES})
+	cuda_add_executable(ray ${src} ${CUDA_FILES})
+ENDIF (WIN32)
 
 message(STATUS "ray added, files ${src}")
 
