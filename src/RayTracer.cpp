@@ -64,8 +64,9 @@ Numeric random(Numeric from, Numeric to) {
 }
 
 static std::pair<glm::dvec3, glm::dvec3> getBasis(glm::dvec3 normal) {
-    auto a = normal[0] > RAY_EPSILON ? glm::normalize(glm::cross(glm::dvec3(0, 1, 0), normal))
-                                     : glm::normalize(glm::cross(glm::dvec3(1, 0, 0), normal));
+    auto a = std::abs(normal[0]) > RAY_EPSILON
+             ? glm::normalize(glm::cross(glm::dvec3(0, 1, 0), normal))
+             : glm::normalize(glm::cross(glm::dvec3(1, 0, 0), normal));
     auto b = glm::cross(normal, a);
     return std::make_pair(a, b);
 }
@@ -104,9 +105,15 @@ glm::dvec3 RayTracer::tracePixel(int i, int j) {
     double y = double(j);
     auto sum = glm::dvec3();
     for (auto xx = x - 0.5 + 1.0 / (2.0 * samples); xx < x + 0.5; xx += 1.0 / samples)
-        for (auto yy = y - 0.5 + 1.0 / (2.0 * samples); yy < y + 0.5; yy += 1.0 / samples)
-            sum += trace(xx / (double)buffer_width, yy / (double)buffer_height);
-    col = sum / ((double)samples * samples);
+        for (auto yy = y - 0.5 + 1.0 / (2.0 * samples); yy < y + 0.5; yy += 1.0 / samples) {
+            auto val = trace(xx / (double) buffer_width, yy / (double) buffer_height);
+            if (TraceUI::m_debug)
+                std::cout << "(" << val[0] << ", " << val[1] << ", " << val[2] << ")" << std::endl;
+            sum += val;
+        }
+    col = sum / ((double) samples * samples);
+    if (TraceUI::m_debug)
+        std::cout << "final: " << col[0] << ", " << col[1] << ", " << col[2] << std::endl;
 
     pixel[0] = (int) (255.0 * col[0]);
     pixel[1] = (int) (255.0 * col[1]);
@@ -122,11 +129,14 @@ glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth, doub
     isect i;
     glm::dvec3 colorC;
 
+    if (glm::length2(thresh) < 3.0 * 12.0 / 255.0 / 255.0)
+        return glm::dvec3(2);
+
     if (!scene->intersect(r, i))
         return traceUI->cubeMap() ? traceUI->getCubeMap()->getColor(r) : glm::dvec3();
 
-    auto hitInner = r.getPosition() + (i.getT() - RAY_EPSILON) * r.getDirection();
-    auto hitOuter = r.getPosition() + (i.getT() + RAY_EPSILON) * r.getDirection();
+    auto hitInner = r.getPosition() + (i.getT() + RAY_EPSILON) * r.getDirection();
+    auto hitOuter = r.getPosition() + (i.getT() - RAY_EPSILON) * r.getDirection();
 
     double rr_prob = std::max({i.getMaterial().kd(i)[0], i.getMaterial().kd(i)[1], i.getMaterial().kd(i)[2]});
     if (depth < -DEPTH_LIMIT)
@@ -138,21 +148,59 @@ glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth, doub
         rr_prob = 1;
     }
 
-    glm::dvec3 rad(0), w(0);
+    glm::dvec3 rad(0);
 
-    // Diffuse
-    if (glm::length2(i.getMaterial().kd(i)) > RAY_EPSILON) {
+    auto diffuse = glm::length(i.getMaterial().kd(i));
+    auto reflect = glm::length(i.getMaterial().kr(i));
+    auto refract = glm::length(i.getMaterial().kt(i));
+    auto rand = random<double>(0, diffuse + reflect + refract);
+
+    auto refl = r.getDirection() - 2.0 * i.getN() * glm::dot(i.getN(), r.getDirection());
+    if (rand < refract) {
+        bool into = glm::dot(r.getDirection(), i.getN()) < 0;
+        auto n = into ? i.getN() : -i.getN();
+        auto n1 = 1.0;
+        auto n2 = i.getMaterial().index(i);
+        auto ratio = into ? n1 / n2 : n2 / n1;
+        auto dot = glm::dot(r.getDirection(), n);
+        auto cos2t = 1 - ratio * ratio * (1 - dot * dot);
+        if (cos2t < 0) {
+            ray rr(hitOuter, refl, glm::dvec3());
+            auto w = i.getMaterial().kr(i) / rr_prob;
+            rad += w * traceRay(rr, w * thresh, depth - 1, t);
+        } else {
+            auto dir = glm::normalize(r.getDirection() * ratio - n * (dot * ratio + std::sqrt(cos2t)));
+            if (TraceUI::m_debug)
+                std::cout << "(" << dir[0] << ", " << dir[1] << ", " << dir[2] << std::endl;
+            ray rr(hitInner, dir, glm::dvec3());
+            double a = n2 - n1;
+            double b = n2 + n1;
+            double R0 = (a * a) / (b * b);
+            double c = 1.0 - (into ? -dot : glm::dot(rr.getDirection(), -n));
+            double Re = R0 + (1.0 - R0) * std::pow(c, 5.0);
+            double ratio2 = std::pow(ratio, 2.0);
+            double Tr = (1.0 - Re) * ratio2;
+
+            double prob = 0.25 + 0.5 * Re;
+            // XXX depth test
+            auto w = i.getMaterial().kt(i) * Tr / rr_prob;
+            rad += w * traceRay(rr, w * thresh, depth - 1, t);
+        }
+    } else if (rand < refract + reflect) {
+        ray rr(hitOuter, refl, glm::dvec3());
+        auto w = i.getMaterial().kr(i) / rr_prob;
+        rad += w * traceRay(rr, w * thresh, depth - 1, t);
+    } else {
         auto basis = getBasis(i.getN());
         auto refl = randomVecFromHemisphere(i.getN());
         ray rr(hitOuter, refl, glm::dvec3());
-        rad += (i.getMaterial().kd(i) * traceRay(rr, thresh, depth - 1, t)) / rr_prob;
-    }
+        auto w = i.getMaterial().kd(i) / rr_prob;
+        rad += w * traceRay(rr, w * thresh, depth - 1, t);
+        if (std::isnan(rad[0])) {
+            std::cout << "oof! " << i.getN() << ", " << basis.first << ", " << basis.second << ", " << refl << ", " << w
+                      << std::endl;
+        }
 
-    // Specular
-    if (glm::length2(i.getMaterial().kr(i)) > RAY_EPSILON) {
-        auto refl = r.getDirection() - 2.0 * i.getN() * glm::dot(i.getN(), r.getDirection());
-        ray rr(hitOuter, refl, glm::dvec3());
-        rad += (i.getMaterial().kr(i) * traceRay(rr, thresh, depth - 1, t)) / rr_prob;
     }
 
     return i.getMaterial().ke(i) + rad;
@@ -244,7 +292,7 @@ void RayTracer::traceSetup(int w, int h) {
     workers = new std::thread *[threads];
 }
 
-constexpr int granularity = 128;
+constexpr int granularity = 32;
 
 /*
  * RayTracer::traceImage

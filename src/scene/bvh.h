@@ -143,9 +143,9 @@ public:
             return;
 
         // Create sorted sets
-        auto xset = std::set<Obj, bool (*)(const Obj, const Obj)>(compare<Obj, compareFunction, 0>);
-        auto yset = std::set<Obj, bool (*)(const Obj, const Obj)>(compare<Obj, compareFunction, 1>);
-        auto zset = std::set<Obj, bool (*)(const Obj, const Obj)>(compare<Obj, compareFunction, 2>);
+        auto xset = std::multiset<Obj, bool (*)(const Obj, const Obj)>(compare<Obj, compareFunction, 0>);
+        auto yset = std::multiset<Obj, bool (*)(const Obj, const Obj)>(compare<Obj, compareFunction, 1>);
+        auto zset = std::multiset<Obj, bool (*)(const Obj, const Obj)>(compare<Obj, compareFunction, 2>);
         for (auto f : objs) {
             xset.insert(f);
             yset.insert(f);

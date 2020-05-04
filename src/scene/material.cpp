@@ -47,8 +47,8 @@ glm::dvec3 TextureMap::getMappedValue(const glm::dvec2 &coord) const {
 }
 
 glm::dvec3 TextureMap::getPixelAt(int x, int y) const {
-    if (x < 0 || x >= width || y < 0 || y >= height)
-        return glm::dvec3();
+    x = std::max(0, std::min(width - 1, x));
+    y = std::max(0, std::min(height - 1, y));
     auto idx = (x + y * width) * 3;
     return glm::dvec3(data[idx] / 256.0, data[idx + 1] / 256.0, data[idx + 2] / 256.0);
 }
