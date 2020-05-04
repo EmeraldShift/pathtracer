@@ -99,16 +99,19 @@ glm::dvec3 RayTracer::tracePixel(int i, int j) {
 
     if (!sceneLoaded()) return col;
 
-    double x = double(i) / double(buffer_width);
-    double y = double(j) / double(buffer_height);
-
     unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
-    for (int i = 0; i < SAMPLES; i++) {
-        col += trace(x, y) / (double)SAMPLES;
-        pixel[0] = (int) (255.0 * col[0]);
-        pixel[1] = (int) (255.0 * col[1]);
-        pixel[2] = (int) (255.0 * col[2]);
-    }
+
+    double x = double(i);
+    double y = double(j);
+    auto sum = glm::dvec3();
+    for (auto xx = x - 0.5 + 1.0 / (2.0 * samples); xx < x + 0.5; xx += 1.0 / samples)
+        for (auto yy = y - 0.5 + 1.0 / (2.0 * samples); yy < y + 0.5; yy += 1.0 / samples)
+            sum += trace(xx / (double)buffer_width, yy / (double)buffer_height);
+    col = sum / ((double)samples * samples);
+
+    pixel[0] = (int) (255.0 * col[0]);
+    pixel[1] = (int) (255.0 * col[1]);
+    pixel[2] = (int) (255.0 * col[2]);
     return col;
 }
 
