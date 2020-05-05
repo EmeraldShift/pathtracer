@@ -15,8 +15,6 @@ public:
 	CommandLineUI( int argc, char** argv );
 	int		run();
 
-	void		alert( const string& msg );
-
 private:
 	void		usage();
 

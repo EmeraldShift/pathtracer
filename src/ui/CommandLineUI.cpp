@@ -14,7 +14,7 @@ extern int getopt(int argc, char** argv, const char* optstring);
 #include "../fileio/images.h"
 #include "CommandLineUI.h"
 
-#include "../RayTracer.h"
+#include "../tracer.h"
 
 using namespace std;
 
@@ -82,13 +82,14 @@ int CommandLineUI::run()
 
 	if (raytracer->sceneLoaded()) {
 		int width = m_nSize;
-		int height = (int)(width / raytracer->aspectRatio() + 0.5);
+		int height = std::round(width / raytracer->aspectRatio() + 0.5);
 
 		raytracer->traceSetup(width, height);
 
 		clock_t start, end;
 		start = clock();
 
+		raytracer->traceSetup(width, height);
 		raytracer->traceImage(width, height);
 		raytracer->waitRender();
 
@@ -112,11 +113,6 @@ int CommandLineUI::run()
 		          << std::endl;
 		return (1);
 	}
-}
-
-void CommandLineUI::alert(const string& msg)
-{
-	std::cerr << msg << std::endl;
 }
 
 void CommandLineUI::usage()

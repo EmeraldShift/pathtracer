@@ -34,6 +34,6 @@ public:
 
 	void setNthMap(int n, TextureMap* m);
 
-	glm::dvec3 getColor(ray r) const;
+	glm::dvec3 getColor(const ray& r) const;
 
 };

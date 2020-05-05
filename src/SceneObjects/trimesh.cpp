@@ -1,12 +1,5 @@
 #include "../scene/scene.h"
-#include <assert.h>
-#include <float.h>
-#include <string.h>
-#include <algorithm>
 #include <cmath>
-#include "../ui/TraceUI.h"
-
-extern TraceUI *traceUI;
 
 using namespace std;
 

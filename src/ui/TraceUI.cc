@@ -176,4 +176,5 @@ void TraceUI::smartLoadCubemap(const string& file)
 		}
 		useCubeMap(true);
 	}
+	std::cout << "cubemap: " << getCubeMap() << std::endl;
 }

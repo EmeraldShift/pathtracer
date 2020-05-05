@@ -1,11 +1,10 @@
+#include <iostream>
 #include "cubeMap.h"
 #include "ray.h"
 #include "../ui/TraceUI.h"
-#include "../scene/material.h"
+#include <glm/gtx/io.hpp>
 
-extern TraceUI *traceUI;
-
-glm::dvec3 CubeMap::getColor(ray r) const {
+glm::dvec3 CubeMap::getColor(const ray& r) const {
 
     // First, map a unit direction to the cube
     auto dir = glm::normalize(r.getDirection());
@@ -31,11 +30,9 @@ glm::dvec3 CubeMap::getColor(ray r) const {
     return tMap[idx]->getMappedValue(uv);
 }
 
-CubeMap::CubeMap() {
-}
+CubeMap::CubeMap() = default;
 
-CubeMap::~CubeMap() {
-}
+CubeMap::~CubeMap() = default;
 
 void CubeMap::setNthMap(int n, TextureMap *m) {
     if (m != tMap[n].get())

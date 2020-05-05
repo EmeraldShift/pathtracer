@@ -13,7 +13,7 @@
 
 using std::string;
 
-class RayTracer;
+class Tracer;
 class CubeMap;
 
 class TraceUI {
@@ -23,11 +23,8 @@ public:
 
 	virtual int run() = 0;
 
-	// Send an alert to the user in some manner
-	virtual void alert(const string& msg) = 0;
-
 	// setters
-	virtual void setRayTracer(RayTracer* r) { raytracer = r; }
+	virtual void setRayTracer(Tracer* r) { raytracer = r; }
 	void useCubeMap(bool b) { m_usingCubeMap = b; }
 
 	// accessors:
@@ -90,12 +87,14 @@ public:
 
 	static int m_threads; // number of threads to run
 	static bool m_debug;
+    bool m_gpu = false;
 
 	static bool matchCubemapFiles(const string& one_cubemap_file,
 	                              string matched_fn[6],
 	                              string& pdir);
+
 protected:
-	RayTracer* raytracer = nullptr;
+	Tracer* raytracer = nullptr;
 
 	int m_nSize = 512;        // Size of the traced image
 	int m_nDepth = 0;         // Max depth of recursion
@@ -106,9 +105,8 @@ protected:
 	int m_nTreeDepth = 15;    // maximum kdTree depth
 	int m_nLeafSize = 10;     // target number of objects per leaf
 	int m_nFilterWidth = 1;   // width of cubemap filter
-	bool m_gpu = false;
 
-	static int rayCount[MAX_THREADS]; // Ray counter
+    static int rayCount[MAX_THREADS]; // Ray counter
 
 	// Determines whether or not to show debugging information
 	// for individual rays.  Disabled by default for efficiency

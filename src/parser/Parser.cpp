@@ -7,8 +7,6 @@
 #include "../scene/scene.h"
 #include <glm/gtx/transform.hpp>
 
-extern TraceUI *traceUI;
-
 using namespace std;
 
 Scene *Parser::parseScene() {

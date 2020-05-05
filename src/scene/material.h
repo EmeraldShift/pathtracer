@@ -15,8 +15,6 @@
 #include <vector>
 #include <cstdint>
 
-class Scene;
-
 class ray;
 
 class isect;

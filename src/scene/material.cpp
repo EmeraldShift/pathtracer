@@ -1,16 +1,9 @@
 #include "material.h"
 #include "../ui/TraceUI.h"
-#include "light.h"
 #include "ray.h"
 
-extern TraceUI *traceUI;
-
-#include <glm/gtx/io.hpp>
-#include <iostream>
+#include <algorithm>
 #include "../fileio/images.h"
-
-using namespace std;
-extern bool debugMode;
 
 Material::~Material() {
 }
