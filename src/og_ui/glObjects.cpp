@@ -8,12 +8,8 @@
 #include "../scene/ray.h"
 #include "../scene/light.h"
 
-#include "../SceneObjects/Box.h"
-#include "../SceneObjects/Cone.h"
 #include "../SceneObjects/Cylinder.h"
 #include "../SceneObjects/Sphere.h"
-#include "../SceneObjects/Square.h"
-#include "../SceneObjects/trimesh.h"
 
 using namespace std;
 

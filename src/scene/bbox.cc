@@ -67,10 +67,6 @@ bool BoundingBox::intersect(const ray &r, double &tMin, double &tMax) const {
 }
 
 bool BoundingBox::intersect(const ray &r, double tMax /* = 1.0e308 */) const {
-//    std::cout << "intersect wit (" << getMin()[0] << ", " << getMin()[1] << ", " << getMin()[2] << "),("
-//              << getMax()[0] << ", " << getMax()[1] << ", " << getMax()[2] << ")" << "ray (" << r.getPosition()[0] <<
-//              ", " << r.getPosition()[1] << ", " << r.getPosition()[2] << "),(" << r.getDirection()[0] << ", " <<
-//              r.getDirection()[1] << ", " << r.getDirection()[2] << "!" << std::endl;
     auto p = r.getPosition();
     auto d = r.getDirection();
     auto n = r.getInverseDirection();
@@ -88,7 +84,6 @@ bool BoundingBox::intersect(const ray &r, double tMax /* = 1.0e308 */) const {
     tMax = std::min(tMax, std::max(t10, t20));
     tMax = std::min(tMax, std::max(t11, t21));
     tMax = std::min(tMax, std::max(t12, t22));
-//    std::cout << (tMin <= tMax && tMax > 0);
     return tMin <= tMax && tMax > 0;
 }
 

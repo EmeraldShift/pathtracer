@@ -66,6 +66,20 @@ static bool compare(const Obj lhs, const Obj rhs) {
     return compareFunction(lhs, rhs, i);
 }
 
+static double area(BoundingBox &bb) {
+    auto min = bb.getMin();
+    auto max = bb.getMax();
+    auto x = max[0] - min[0];
+    auto y = max[1] - min[1];
+    auto z = max[2] - min[2];
+    auto a = 2.0 * (x * y + y * z + z * x);
+    return a == 0 ? 1e308 : a; // Default empty bbox to infinite area
+}
+
+static double sah(int n_l, double s_l, int n_r, double s_r, double s_p) {
+    return 1 + n_l * (s_l / s_p) + n_r * (s_r / s_p);
+}
+
 /**
  * Encapsulates a set of objects, which have already been sorted on each axis,
  * into a Cluster instance which contains them. This function recursively
@@ -90,27 +104,61 @@ static Cluster<Obj> *genCluster(std::vector<Obj> &xvec,
         return c;
     }
 
-    // Find max spreads
-    auto xspread = spread<Obj, spreadFunction, 0>(xvec);
-    auto yspread = spread<Obj, spreadFunction, 1>(yvec);
-    auto zspread = spread<Obj, spreadFunction, 2>(zvec);
+    auto bestAxis = -1;
+    auto bestSplit = -1;
+    auto size = xvec.size();
+    auto bestCost = size;
+    double *leftArea = new double[size];
+    std::vector<Obj> vecs[] = {xvec, yvec, zvec};
+    for (int axis = 0; axis < 3; axis++) {
+        BoundingBox bb;
+        for (int i = 0; i < size; i++) {
+            bb.merge(vecs[axis][i]->getBoundingBox());
+            leftArea[i] = area(bb);
+        }
 
-    // Pick widest
-    auto &splitset = zvec;
-    if (yspread > zspread)
-        splitset = yvec;
-    if (xspread > yspread && xspread > zspread)
-        splitset = xvec;
+        // leftArea[i] contains the (i+1) leftmost items
 
-    // Partition across widest axis
+        bb = BoundingBox();
+        for (int i = size - 1; i > 0; i--) {
+            bb.merge(xvec[i]->getBoundingBox());
+            double cost = sah(i, leftArea[i - 1], size - i, area(bb), leftArea[size]);
+            if (cost < bestCost) {
+                bestCost = cost;
+                bestAxis = axis;
+                bestSplit = i;
+            }
+        }
+    }
+    delete[] leftArea;
+
+    // Defaults if no split better than leaf
+    if (bestAxis == -1) {
+        // Find max spreads
+        auto xspread = spread<Obj, spreadFunction, 0>(xvec);
+        auto yspread = spread<Obj, spreadFunction, 1>(yvec);
+        auto zspread = spread<Obj, spreadFunction, 2>(zvec);
+
+        // Pick widest
+        auto splitset = 2;
+        if (yspread > zspread)
+            splitset = 1;
+        if (xspread > yspread && xspread > zspread)
+            splitset = 0;
+
+        bestAxis = splitset;
+        bestSplit = size / 2;
+    }
+
+    auto &splitset = vecs[bestAxis];
     std::vector<Obj> xleft, yleft, zleft, xright, yright, zright;
-    for (int i = 0; i < splitset.size() / 2; i++) {
+    for (size_t i = 0; i < bestSplit; i++) {
         auto f = splitset[i];
         xleft.push_back(f);
         yleft.push_back(f);
         zleft.push_back(f);
     }
-    for (int i = splitset.size() / 2; i < splitset.size(); i++) {
+    for (size_t i = bestSplit; i < size; i++) {
         auto f = splitset[i];
         xright.push_back(f);
         yright.push_back(f);

@@ -1,40 +1,37 @@
 #include <cmath>
 
 #include "Sphere.h"
-#include <iostream>
 #include <glm/gtx/io.hpp>
 
 using namespace std;
 
-bool Sphere::intersectLocal(ray &r, isect &i) const {
-    r.setDirection(glm::normalize(r.getDirection()));
-    glm::dvec3 v = -r.getPosition();
-    double b = glm::dot(v, r.getDirection());
-    double discriminant = b * b - glm::dot(v, v) + 1;
+bool Sphere::intersect(ray &r, isect &i) const {
+    auto pos = r.getPosition();
+    auto dir = glm::normalize(r.getDirection());
+    auto toSphere = position - r.getPosition();
+    auto dot = glm::dot(dir, toSphere);
 
-    if (discriminant < 0.0) {
+    auto discriminant = dot * dot - glm::length2(toSphere) + radius * radius;
+    if (discriminant < 0)
         return false;
-    }
 
     discriminant = sqrt(discriminant);
-    double t2 = b + discriminant;
-
-    if (t2 <= RAY_EPSILON) {
+    double t2 = dot - discriminant;
+    if (t2 < RAY_EPSILON)
         return false;
-    }
 
-    i.setObject(this);
-    i.setMaterial(this->getMaterial());
-
-    double t1 = b - discriminant;
+    double t1 = dot - discriminant;
 
     if (t1 > RAY_EPSILON && t1 < i.getT()) {
+        auto col = this->getMaterial().kd(i);
         i.setT(t1);
-        i.setN(glm::normalize(r.at(t1)));
+        i.setMaterial(this->getMaterial());
+        i.setN(glm::normalize(r.at(t1) - position));
         return true;
     } else if (t2 < i.getT()) {
         i.setT(t2);
-        i.setN(glm::normalize(r.at(t2)));
+        i.setMaterial(this->getMaterial());
+        i.setN(glm::normalize(r.at(t2) - position));
         return true;
     }
     return false;

@@ -28,6 +28,8 @@ void load(Json& j, const string& field, T& target)
 
 } // anonymous namespace
 
+bool TraceUI::m_debug;
+
 TraceUI::TraceUI()
 {
 	for (unsigned int i = 0; i < MAX_THREADS; i++)

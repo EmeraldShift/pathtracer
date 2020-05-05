@@ -44,8 +44,6 @@ std::atomic<int> workDone;
 std::atomic<int> threadsDone;
 
 constexpr int DEPTH_LIMIT = 4;
-constexpr int SUPER_MAX_DEPTH = 8;
-constexpr int SUPERSAMPLE = 10;
 
 // Trace a top-level ray through pixel(i,j), i.e. normalized window coordinates (x,y),
 // through the projection plane, and out into the scene.  All we do is
@@ -73,6 +71,19 @@ static std::pair<glm::dvec3, glm::dvec3> getBasis(glm::dvec3 normal) {
     return std::make_pair(a, b);
 }
 
+constexpr double W = 2.0;
+constexpr double exposureBias = 2.0;
+
+static double hable(double x) {
+    double a = 0.15;
+    double b = 0.50;
+    double c = 0.10;
+    double d = 0.20;
+    double e = 0.02;
+    double f = 0.30;
+    return ((x * (a * x + c * b) + d * e) / (x * (a * x + b) + d * f)) - e / f;
+}
+
 static glm::dvec3 randomVecFromHemisphere(glm::dvec3 normal) {
     auto basis = getBasis(normal);
     auto p = 2 * M_PI * random<double>(0, 1);
@@ -85,13 +96,12 @@ static glm::dvec3 randomVecFromHemisphere(glm::dvec3 normal) {
 
 glm::dvec3 RayTracer::trace(double x, double y) {
     // Clear out the ray cache in the scene for debugging purposes,
-    // if (TraceUI::m_debug)
-    //     scene->intersectCache.clear();
+    if (TraceUI::m_debug)
+        scene->intersectCache.clear();
 
-    ray r(glm::dvec3(0, 0, 0), glm::dvec3(0, 0, 0), glm::dvec3(1, 1, 1), ray::VISIBILITY);
+    ray r(glm::dvec3(0, 0, 0), glm::dvec3(0, 0, 0));
     scene->getCamera().rayThrough(x, y, r);
-    double dummy;
-    glm::dvec3 ret = traceRay(r, glm::dvec3(1.0, 1.0, 1.0), traceUI->getDepth(), dummy);
+    glm::dvec3 ret = traceRay(r, glm::dvec3(1.0, 1.0, 1.0), traceUI->getDepth());
     ret = glm::clamp(ret, 0.0, 1.0);
     return ret;
 }
@@ -111,9 +121,7 @@ glm::dvec3 RayTracer::tracePixel(int i, int j) {
             sum += trace(xx / (double) buffer_width, yy / (double) buffer_height);
     col = sum / ((double) samples * samples);
 
-    pixel[0] = (int) (255.0 * col[0]);
-    pixel[1] = (int) (255.0 * col[1]);
-    pixel[2] = (int) (255.0 * col[2]);
+    setPixel(i, j, col);
     return col;
 }
 
@@ -121,12 +129,10 @@ glm::dvec3 RayTracer::tracePixel(int i, int j) {
 
 // Do recursive ray tracing!  You'll want to insert a lot of code here
 // (or places called from here) to handle reflection, refraction, etc etc.
-glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth, double &t) {
+glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth) {
     isect i;
-    glm::dvec3 colorC;
-
     if (glm::length2(thresh) < 3.0 * 12.0 / 255.0 / 255.0)
-        return glm::dvec3(2);
+        return glm::dvec3(0);
 
     if (!scene->intersect(r, i))
         return traceUI->cubeMap() ? traceUI->getCubeMap()->getColor(r) : glm::dvec3();
@@ -139,7 +145,7 @@ glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth, doub
         rr_prob *= std::pow(0.5, -DEPTH_LIMIT - depth);
     if (depth < 0) {
         if (random<double>(0, 1) > rr_prob)
-            return i.getMaterial().ke(i);
+            return i.getMaterial().ke(i) * 32.0;
     } else {
         rr_prob = 1;
     }
@@ -161,12 +167,12 @@ glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth, doub
         auto dot = glm::dot(r.getDirection(), n);
         auto cos2t = 1 - ratio * ratio * (1 - dot * dot);
         if (cos2t < 0) {
-            ray rr(hitOuter, refl, glm::dvec3());
+            ray rr(hitOuter, refl);
             auto w = i.getMaterial().kr(i) / rr_prob;
-            rad += w * traceRay(rr, w * thresh, depth - 1, t);
+            rad += w * traceRay(rr, w * thresh, depth - 1);
         } else {
             auto dir = glm::normalize(r.getDirection() * ratio - n * (dot * ratio + std::sqrt(cos2t)));
-            ray rr(hitInner, dir, glm::dvec3());
+            ray rr(hitInner, dir);
             double a = n2 - n1;
             double b = n2 + n1;
             double R0 = (a * a) / (b * b);
@@ -177,27 +183,26 @@ glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth, doub
 
             double prob = 0.25 + 0.5 * Re;
             // XXX depth test
-            auto w = i.getMaterial().kt(i) * Tr / rr_prob;
-            rad += w * traceRay(rr, w * thresh, depth - 1, t);
+            auto w = glm::dvec3(1) * Tr / rr_prob;
+            rad = w * traceRay(rr, w * thresh, depth - 1);
         }
     } else if (rand < refract + reflect) {
-        ray rr(hitOuter, refl, glm::dvec3());
-        auto w = i.getMaterial().kr(i) / rr_prob;
-        rad += w * traceRay(rr, w * thresh, depth - 1, t);
+        ray rr(hitOuter, refl);
+        auto w = i.getMaterial().kd(i) / rr_prob;
+        rad = w * traceRay(rr, w * thresh, depth - 1);
     } else {
         auto basis = getBasis(i.getN());
-        auto refl = randomVecFromHemisphere(i.getN());
-        ray rr(hitOuter, refl, glm::dvec3());
+        auto dir = randomVecFromHemisphere(i.getN());
+        ray rr(hitOuter, dir);
         auto w = i.getMaterial().kd(i) / rr_prob;
-        rad += w * traceRay(rr, w * thresh, depth - 1, t);
+        rad = w * traceRay(rr, w * thresh, depth - 1);
         if (std::isnan(rad[0])) {
+            std::cout << "(" << w << std::endl;
             std::cout << "oof! " << i.getN() << ", " << basis.first << ", " << basis.second << ", " << refl << ", " << w
                       << std::endl;
         }
-
     }
-
-    return i.getMaterial().ke(i) + rad;
+    return i.getMaterial().ke(i) * 32.0 + rad;
 }
 
 RayTracer::RayTracer()
@@ -314,7 +319,7 @@ void RayTracer::traceImage(int w, int h) {
         }
     }
 
-    for (int i = 0; i < threads; i++) {
+    for (unsigned i = 0; i < threads; i++) {
         workers[i] = new std::thread([&, i] {
             while (true) {
                 WorkUnit *work;
@@ -347,7 +352,7 @@ bool RayTracer::checkRender() {
 }
 
 void RayTracer::waitRender() {
-    for (int i = 0; i < threads; i++)
+    for (unsigned i = 0; i < threads; i++)
         workers[i]->join();
 }
 
@@ -359,9 +364,10 @@ glm::dvec3 RayTracer::getPixel(int i, int j) {
 
 void RayTracer::setPixel(int i, int j, glm::dvec3 color) {
     unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
-
+    pixel[0] = (int) (255.0 * (1.0 / hable(W)) * hable(exposureBias * color[0]));
+    pixel[1] = (int) (255.0 * (1.0 / hable(W)) * hable(exposureBias * color[1]));
+    pixel[2] = (int) (255.0 * (1.0 / hable(W)) * hable(exposureBias * color[2]));
     pixel[0] = (int) (255.0 * color[0]);
     pixel[1] = (int) (255.0 * color[1]);
     pixel[2] = (int) (255.0 * color[2]);
 }
-

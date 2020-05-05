@@ -17,7 +17,7 @@
 #include "material.h"
 
 
-class SceneObject;
+class MaterialSceneObject;
 
 class isect;
 
@@ -35,12 +35,7 @@ static glm::dvec3 invert(glm::dvec3 dd) {
 
 class ray {
 public:
-    enum RayType {
-        VISIBILITY, REFLECTION, REFRACTION, SHADOW
-    };
-
-    ray(const glm::dvec3 &pos, const glm::dvec3 &dir, const glm::dvec3 &atten,
-        RayType type = VISIBILITY);
+    ray(const glm::dvec3 &pos, const glm::dvec3 &dir);
 
     ray(const ray &other);
 
@@ -58,10 +53,6 @@ public:
 
     glm::dvec3 getInverseDirection() const { return invdir; }
 
-    glm::dvec3 getAtten() const { return atten; }
-
-    RayType getType() const { return type; }
-
     void setPosition(const glm::dvec3 &pp) { pos = pp; }
 
     void setDirection(const glm::dvec3 &dd) {
@@ -73,10 +64,7 @@ private:
     glm::dvec3 pos;
     glm::dvec3 dir;
     glm::dvec3 invdir;
-    glm::dvec3 atten;
-    RayType type;
 };
-
 
 // The description of an intersection point.
 
@@ -84,7 +72,7 @@ constexpr double ISECT_NO_HIT = 12345678.9;
 
 class isect {
 public:
-    isect() : obj(nullptr), t(ISECT_NO_HIT), N(), material(nullptr) {}
+    isect() : t(ISECT_NO_HIT), N() {}
 
     isect(const isect &other) {
         copyFromOther(other);
@@ -97,8 +85,6 @@ public:
         return *this;
     }
 
-    void setObject(const SceneObject *o) { obj = o; }
-
     // Get/Set Time of flight
     void setT(double tt) { t = tt; }
 
@@ -110,11 +96,9 @@ public:
     glm::dvec3 getN() const { return N; }
 
     void setMaterial(const Material &m) {
-        if (material)
-            *material = m;
-        else
-            material.reset(new Material(m));
+        material = m;
     }
+    const Material &getMaterial() const { return material; }
 
     void setUVCoordinates(const glm::dvec2 &coords) {
         uvCoordinates = coords;
@@ -128,25 +112,17 @@ public:
         setBary(glm::dvec3(alpha, beta, gamma));
     }
 
-    const Material &getMaterial() const;
-
 private:
     void copyFromOther(const isect &other) {
         if (this == &other)
             return;
-        obj = other.obj;
         t = other.t;
         N = other.N;
         bary = other.bary;
         uvCoordinates = other.uvCoordinates;
-        if (other.material) {
-            setMaterial(*other.material);
-        } else {
-            material.reset();
-        }
+        material = other.material;
     }
 
-    const SceneObject *obj;
     double t;
     glm::dvec3 N;
     glm::dvec2 uvCoordinates;
@@ -155,7 +131,7 @@ private:
     // if this intersection has its own material
     // (as opposed to one in its associated object)
     // as in the case where the material was interpolated
-    std::unique_ptr<Material> material;
+    Material material;
 };
 
 const double RAY_EPSILON = 0.00000001;

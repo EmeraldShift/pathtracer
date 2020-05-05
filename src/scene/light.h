@@ -12,7 +12,6 @@ using std::max;
 #include "../gl.h"
 
 class Light
-	: public SceneElement
 {
 public:
 	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const = 0;
@@ -23,33 +22,9 @@ public:
 
 
 protected:
-	Light(Scene *scene, const glm::dvec3& col) : SceneElement(scene), color(col) {}
+	Light(Scene *scene, const glm::dvec3& col) : color(col) {}
 
 	glm::dvec3 color;
-
-public:
-	virtual void glDraw(GLenum lightID) const { }
-	virtual void glDraw() const { }
-};
-
-class DirectionalLight
-	: public Light
-{
-public:
-	DirectionalLight(Scene *scene, const glm::dvec3& orien, const glm::dvec3& color)
-		: Light(scene, color), orientation(glm::normalize(orien)) { }
-	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
-	virtual double distanceAttenuation(const glm::dvec3& P) const;
-	virtual glm::dvec3 getColor() const;
-	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
-	virtual double getDistanceFrom(const glm::dvec3 &p) const override;
-
-protected:
-	glm::dvec3 		orientation;
-
-public:
-	void glDraw(GLenum lightID) const;
-	void glDraw() const;
 };
 
 class PointLight
@@ -88,10 +63,6 @@ protected:
 	float constantTerm;		// a
 	float linearTerm;		// b
 	float quadraticTerm;	// c
-
-public:
-	void glDraw(GLenum lightID) const;
-	void glDraw() const;
 
 protected:
 

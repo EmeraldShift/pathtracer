@@ -35,26 +35,6 @@ class Light;
 
 class Scene;
 
-template<typename Obj>
-class KdTree;
-
-class SceneElement {
-public:
-    virtual ~SceneElement() {}
-
-    Scene *getScene() const { return scene; }
-
-    // For debugging purposes, draws using OpenGL
-    virtual void glDraw(int quality, bool actualMaterials,
-                        bool actualTextures) const {
-    }
-
-protected:
-    SceneElement(Scene *s) : scene(s) {}
-
-    Scene *scene;
-};
-
 inline glm::dvec3 operator*(const glm::dmat4x4 &mat, const glm::dvec3 &vec) {
     glm::dvec4 vec4(vec[0], vec[1], vec[2], 1.0);
     auto ret = mat * vec4;
@@ -82,15 +62,15 @@ public:
     }
 
     TransformNode *createChild(const glm::dmat4x4 &xform) {
-        TransformNode *child = new TransformNode(this, xform);
+        auto child = new TransformNode(this, xform);
         children.push_back(child);
         return child;
     }
 
     // Coordinate-Space transformation
-    glm::dvec3 globalToLocalCoords(const glm::dvec3 &v) {
-        return inverse * v;
-    }
+//    glm::dvec3 globalToLocalCoords(const glm::dvec3 &v) {
+//        return inverse * v;
+//    }
 
     glm::dvec3 localToGlobalCoords(const glm::dvec3 &v) {
         return xform * v;
@@ -113,7 +93,7 @@ protected:
     TransformNode(TransformNode *parent, const glm::dmat4x4 &xform)
             : children() {
         this->parent = parent;
-        if (parent == NULL)
+        if (parent == nullptr)
             this->xform = xform;
         else
             this->xform = parent->xform * xform;
@@ -124,131 +104,216 @@ protected:
 
 class TransformRoot : public TransformNode {
 public:
-    TransformRoot() : TransformNode(NULL, glm::dmat4x4(1.0)) {}
+    TransformRoot() : TransformNode(nullptr, glm::dmat4x4(1.0)) {}
+};
+
+class MaterialSceneObject {
+public:
+    virtual ~MaterialSceneObject() = default;
+
+    virtual const Material &getMaterial() const { return material; }
+
+    virtual void setMaterial(Material m) { material = m; }
+
+protected:
+    explicit MaterialSceneObject(const Material mat) : material(mat) {
+    }
+
+    Material material;
 };
 
 // A Geometry object is anything that has extent in three dimensions.
 // It may not be an actual visible scene object.  For example, hierarchical
 // spatial subdivision could be expressed in terms of Geometry instances.
-class Geometry : public SceneElement {
-protected:
-    // intersections performed in the object's local coordinate space
-    // do not call directly - this should only be called by intersect()
-    virtual bool intersectLocal(ray &r, isect &i) const = 0;
-
+class Geometry : public MaterialSceneObject {
 public:
-    bool intersect(ray &r, isect &i) const;
-
-    virtual bool hasBoundingBoxCapability() const;
+    Geometry(const Material mat) : MaterialSceneObject(mat) {}
 
     const BoundingBox &getBoundingBox() const { return bounds; }
 
-    glm::dvec3 getNormal() { return glm::dvec3(1.0, 0.0, 0.0); }
+protected:
+    BoundingBox bounds;
+};
 
-    virtual void computeBoundingBox();
-
-    // default method for ComputeLocalBoundingBox returns a bogus bounding
-    // box;
-    // this should be overridden if hasBoundingBoxCapability() is true.
-    virtual BoundingBox computeLocalBoundingBox() { return BoundingBox(); }
-
-    void setTransform(TransformNode *transform) {
-        this->transform = transform;
-    };
-
-    Geometry(Scene *scene) : SceneElement(scene) {}
-
-    // For debugging purposes, draws using OpenGL
-    void glDraw(int quality, bool actualMaterials,
-                bool actualTextures) const;
-
-    // The defult does nothing; this is here because it is not required
-    // that you implement this function if you create your own scene
-    // objects.
-    virtual void glDrawLocal(int quality, bool actualMaterials,
-                             bool actualTextures) const {
+class Sphere : public Geometry {
+public:
+    Sphere(const Material &mat, TransformNode *txf)
+            : Geometry(mat),
+              position(txf->localToGlobalCoords(glm::dvec4(0, 0, 0, 1))),
+              radius(txf->localToGlobalCoords(glm::dvec4(1, 0, 0, 0))[0]) {
+        bounds = BoundingBox(glm::dvec3(position[0] - radius, position[1] - radius, position[2] - radius),
+                             glm::dvec3(position[0] + radius, position[1] + radius, position[2] + radius));
     }
 
-    static bool compare(Geometry *const lhs, Geometry *const rhs, int i) {
+    Sphere(const Material &mat, glm::dvec3 position, double radius)
+            : Geometry(mat),
+              position(position), radius(radius) {
+        bounds = BoundingBox(glm::dvec3(position[0] - radius, position[1] - radius, position[2] - radius),
+                             glm::dvec3(position[0] + radius, position[1] + radius, position[2] + radius));
+    }
+
+    bool intersect(ray &r, isect &i) const;
+
+    static bool compare(Sphere *const lhs, Sphere *const rhs, int i) {
         return ((lhs->getBoundingBox().getMax() + lhs->getBoundingBox().getMin()) / 2.0)[i]
                < ((rhs->getBoundingBox().getMax() + rhs->getBoundingBox().getMin()) / 2.0)[i];
     }
 
-    static double spread(std::vector<Geometry *> &v, int i) {
+    static double spread(std::vector<Sphere *> &v, int i) {
         return ((v[v.size() - 1]->getBoundingBox().getMax() + v[v.size() - 1]->getBoundingBox().getMin()) / 2.0)[i]
                - ((v[0]->getBoundingBox().getMax() + v[0]->getBoundingBox().getMin()) / 2.0)[i];
     }
 
-protected:
-    BoundingBox bounds;
-    TransformNode *transform;
+private:
+    glm::dvec3 position;
+    double radius;
 };
 
-// A SceneObject is a real actual thing that we want to model in the
-// world.  It has extent (its Geometry heritage) and surface properties
-// (its material binding).  The decision of how to store that material
-// is left up to the subclass.
-class SceneObject : public Geometry {
+class Trimesh;
+class TrimeshFace : public Geometry {
+    Trimesh *parent;
+    int ids[3];
+    glm::dvec3 normal;
+    double dist;
+    glm::dvec3 uInv;
+    glm::dvec3 vInv;
+    glm::dvec3 nInv;
+
 public:
-    virtual const Material &getMaterial() const = 0;
+    TrimeshFace(const Material &mat, Trimesh *parent, int a, int b, int c);
 
-    virtual void setMaterial(Material *m) = 0;
+    bool degen;
 
-    void glDraw(int quality, bool actualMaterials,
-                bool actualTextures) const;
+    int operator[](int i) const { return ids[i]; }
 
-protected:
-    SceneObject(Scene *scene) : Geometry(scene) {}
-};
+    glm::dvec3 getNormal() { return normal; }
 
-// A simple extension of SceneObject that adds an instance of Material
-// for simple material bindings.
-class MaterialSceneObject : public SceneObject {
-public:
-    virtual ~MaterialSceneObject() {}
+    bool intersect(ray &r, isect &i) const;
 
-    virtual const Material &getMaterial() const { return *material; }
-
-    virtual void setMaterial(Material *m) { material.reset(m); }
-
-protected:
-    MaterialSceneObject(Scene *scene, Material *mat)
-            : SceneObject(scene), material(mat) {
+    static bool compare(TrimeshFace *const lhs, TrimeshFace *const rhs, int i) {
+        return ((lhs->getBoundingBox().getMax() + lhs->getBoundingBox().getMin()) / 2.0)[i]
+               < ((rhs->getBoundingBox().getMax() + rhs->getBoundingBox().getMin()) / 2.0)[i];
     }
 
-    unique_ptr<Material> material;
+    static double spread(std::vector<TrimeshFace *> &v, int i) {
+        return ((v[v.size() - 1]->getBoundingBox().getMax() + v[v.size() - 1]->getBoundingBox().getMin()) / 2.0)[i]
+               - ((v[0]->getBoundingBox().getMax() + v[0]->getBoundingBox().getMin()) / 2.0)[i];
+    }
+
+private:
+    BoundingBox computeLocalBoundingBox();
 };
+
+class Trimesh : public MaterialSceneObject {
+    friend class TrimeshFace;
+
+    typedef std::vector<glm::dvec3> Normals;
+    typedef std::vector<glm::dvec3> Vertices;
+    typedef std::vector<TrimeshFace *> Faces;
+    typedef std::vector<Material> Materials;
+
+    Vertices vertices;
+    Faces faces;
+    Normals normals;
+    Materials materials;
+
+public:
+    explicit Trimesh(const Material &mat)
+            : MaterialSceneObject(mat),
+              displayListWithMaterials(0),
+              displayListWithoutMaterials(0) {
+    }
+
+    ~Trimesh() override;
+
+    // must add vertices, normals, and materials IN ORDER
+    void addVertex(const glm::dvec3 &);
+
+    void addMaterial(const Material &m);
+
+    void addNormal(const glm::dvec3 &);
+
+    bool addFace(int a, int b, int c);
+
+    Faces getFaces() { return faces; };
+
+    const char *doubleCheck();
+
+    void generateNormals();
+
+    static void genFace(Trimesh *mesh, glm::dvec3 a, glm::dvec3 b, glm::dvec3 c) {
+        mesh->addVertex(a);
+        mesh->addVertex(b);
+        mesh->addVertex(c);
+    }
+
+    static Trimesh *genCube(Material &mat, glm::dvec3 v[8]) {
+        auto mesh = new Trimesh(mat);
+        genFace(mesh, v[0], v[1], v[2]);
+        genFace(mesh, v[3], v[2], v[1]);
+        genFace(mesh, v[4], v[6], v[5]);
+        genFace(mesh, v[7], v[5], v[6]);
+        genFace(mesh, v[0], v[2], v[4]);
+        genFace(mesh, v[6], v[4], v[2]);
+        genFace(mesh, v[1], v[5], v[3]);
+        genFace(mesh, v[7], v[3], v[5]);
+        genFace(mesh, v[0], v[1], v[4]);
+        genFace(mesh, v[5], v[4], v[1]);
+        genFace(mesh, v[2], v[6], v[3]);
+        genFace(mesh, v[7], v[3], v[6]);
+        for (int i = 0; i < 12; i++)
+            mesh->addFace(i * 3, i * 3 + 1, i * 3 + 2);
+        return mesh;
+    }
+
+    static Trimesh *fromBox(TransformNode *transform, Material &mat) {
+        auto p000 = transform->localToGlobalCoords(glm::dvec3(-0.5, -0.5, -0.5));
+        auto p001 = transform->localToGlobalCoords(glm::dvec3(-0.5, -0.5, 0.5));
+        auto p010 = transform->localToGlobalCoords(glm::dvec3(-0.5, 0.5, -0.5));
+        auto p011 = transform->localToGlobalCoords(glm::dvec3(-0.5, 0.5, 0.5));
+        auto p100 = transform->localToGlobalCoords(glm::dvec3(0.5, -0.5, -0.5));
+        auto p101 = transform->localToGlobalCoords(glm::dvec3(0.5, -0.5, 0.5));
+        auto p110 = transform->localToGlobalCoords(glm::dvec3(0.5, 0.5, -0.5));
+        auto p111 = transform->localToGlobalCoords(glm::dvec3(0.5, 0.5, 0.5));
+        glm::dvec3 vertices[8] = {p000, p001, p010, p011, p100, p101, p110, p111};
+        return genCube(mat, vertices);
+    }
+
+    static Trimesh *fromSquare(Material &mat, TransformNode *transform) {
+        auto p000 = transform->localToGlobalCoords(glm::dvec3(-0.5, -0.5, -0.001));
+        auto p001 = transform->localToGlobalCoords(glm::dvec3(-0.5, -0.5, 0.001));
+        auto p010 = transform->localToGlobalCoords(glm::dvec3(-0.5, 0.5, -0.001));
+        auto p011 = transform->localToGlobalCoords(glm::dvec3(-0.5, 0.5, 0.001));
+        auto p100 = transform->localToGlobalCoords(glm::dvec3(0.5, -0.5, -0.001));
+        auto p101 = transform->localToGlobalCoords(glm::dvec3(0.5, -0.5, 0.001));
+        auto p110 = transform->localToGlobalCoords(glm::dvec3(0.5, 0.5, -0.001));
+        auto p111 = transform->localToGlobalCoords(glm::dvec3(0.5, 0.5, 0.001));
+        glm::dvec3 vertices[8] = {p000, p001, p010, p011, p100, p101, p110, p111};
+        return genCube(mat, vertices);
+    }
+
+protected:
+
+    mutable int displayListWithMaterials;
+    mutable int displayListWithoutMaterials;
+};
+
+class Trimesh;
+class TrimeshFace;
 
 class Scene {
 public:
-    typedef std::vector<Light *>::iterator liter;
-    typedef std::vector<Light *>::const_iterator cliter;
-    typedef std::vector<Geometry *>::iterator giter;
-    typedef std::vector<Geometry *>::const_iterator cgiter;
-
     TransformRoot transformRoot;
 
     Scene();
 
     virtual ~Scene();
 
-    void add(Geometry *obj);
+    void add(Sphere *sphere);
 
-    void add(Light *light);
+    void add(Trimesh *mesh);
 
     bool intersect(ray &r, isect &i);
-
-    auto beginLights() const { return lights.begin(); }
-
-    auto endLights() const { return lights.end(); }
-
-    const auto &getAllLights() const { return lights; }
-
-    auto beginObjects() const { return objects.cbegin(); }
-
-    auto endObjects() const { return objects.cend(); }
-
-    const Camera &getCamera() const { return camera; }
 
     Camera &getCamera() { return camera; }
 
@@ -257,30 +322,18 @@ public:
     // is destroyed.
     TextureMap *getTexture(string name);
 
-    // These two functions are for handling ambient light; in the Phong
-    // model,
-    // the "ambient" light is considered a property of the _scene_ as a
-    // whole
-    // and hence should be set here.
-    glm::dvec3 ambient() const { return ambientIntensity; }
-
     void addAmbient(const glm::dvec3 &ambient) {
         ambientIntensity += ambient;
     }
 
-    void glDraw(int quality, bool actualMaterials,
-                bool actualTextures) const;
-
-    const BoundingBox &bounds() const { return sceneBounds; }
-
     void constructBvh() {
-        bvh.construct(objects);
+        sBvh.construct(spheres);
+        tBvh.construct(triangles);
     }
 
-
 private:
-    std::vector<Geometry*> objects;
-    std::vector<std::unique_ptr<Light>> lights;
+    std::vector<Sphere *> spheres;
+    std::vector<TrimeshFace *> triangles;
     Camera camera;
 
     // This is the total amount of ambient light in the scene
@@ -290,14 +343,8 @@ private:
     typedef std::map<std::string, std::unique_ptr<TextureMap>> tmap;
     tmap textureCache;
 
-    // Each object in the scene, provided that it has
-    // hasBoundingBoxCapability(),
-    // must fall within this bounding box.  Objects that don't have
-    // hasBoundingBoxCapability()
-    // are exempt from this requirement.
-    BoundingBox sceneBounds;
-
-    BoundedVolumeHierarchy<Geometry*, Geometry::compare, Geometry::spread> bvh;
+    BoundedVolumeHierarchy<Sphere *, Sphere::compare, Sphere::spread> sBvh;
+    BoundedVolumeHierarchy<TrimeshFace *, TrimeshFace::compare, TrimeshFace::spread> tBvh;
 
 public:
     // This is used for debugging purposes only.

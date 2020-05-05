@@ -1,3 +1,4 @@
+#include <iostream>
 #include "camera.h"
 #include "../ui/TraceUI.h"
 
@@ -19,7 +20,7 @@ Camera::Camera()
 }
 
 void
-Camera::rayThrough(double x, double y, ray &r)
+Camera::rayThrough(double x, double y, ray &r) const
 // Ray through normalized window point x,y.  In normalized coordinates
 // the camera's x and y vary both vary from 0 to 1.
 {

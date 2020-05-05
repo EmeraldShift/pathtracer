@@ -1,6 +1,6 @@
 // Tokenizer.cpp
 // Breaks the input stream up into tokens
-#include <string> 
+#include <string>
 #include <map>
 #include <sstream>
 #include <stdlib.h>
@@ -36,9 +36,8 @@
 // file pointer.
 //
 
-Tokenizer::Tokenizer(istream& fp, bool printTokens) 
-  : buffer( fp, false, false )
-{ 
+Tokenizer::Tokenizer(istream &fp, bool printTokens)
+        : buffer(fp, false, false) {
     TokenColumn = 0;
     CurrentCh = ' ';
     UnGetToken = NULL;
@@ -51,12 +50,12 @@ Tokenizer::Tokenizer(istream& fp, bool printTokens)
 // last phase to be executed
 // 
 void Tokenizer::ScanProgram() {
-    while (Get()->kind() != EOFSYM) ;
+    while (Get()->kind() != EOFSYM);
 }
 
 
 unique_ptr<Token> Tokenizer::Get() {
-  return unique_ptr<Token>(GetNext());
+    return unique_ptr<Token>(GetNext());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -67,61 +66,61 @@ unique_ptr<Token> Tokenizer::Get() {
 // if there is one.
 //
 
-Token* Tokenizer::GetNext() {
-  Token* T = NULL;
+Token *Tokenizer::GetNext() {
+    Token *T = NULL;
 
-  // First check to see if there is an UnGetToken. If there is, use it.
-  if (UnGetToken != NULL) {
-    T = UnGetToken;
-    UnGetToken = NULL;
-    return T;
-  }
-
-  // Otherwise, crank up the scanner and get a new token.
-
-  // Get rid of any whitespace
-  SkipWhiteSpace();
-
-  // test for end of file
-  if (buffer.isEOF()) {
-    T = new Token(EOFSYM);
-
-  } else {
-    
-    // Save the starting position of the symbol in a variable,
-    // so that nicer error messages can be produced.
-    TokenColumn = buffer.CurColumn();
-    
-    // Check kind of current character
-    
-    // Note that _'s are now allowed in identifiers.
-    if (isalpha(CurrentCh) || '_' == CurrentCh) {
-      // grab identifier or reserved word
-      T = GetIdent();
-    } else if ( '"' == CurrentCh)  {
-      T = GetQuotedIdent(); 
-    } else if (isdigit(CurrentCh) || '-' == CurrentCh || '.' == CurrentCh) {
-      T = GetScalar();
-    } else { 
-      //
-      // Check for other tokens
-      //
-      
-      T = GetPunct();
+    // First check to see if there is an UnGetToken. If there is, use it.
+    if (UnGetToken != NULL) {
+        T = UnGetToken;
+        UnGetToken = NULL;
+        return T;
     }
-  }
-  
-  if (T == NULL) {
-    throw ParserFatalException("didn't get a token");
-  }
 
-  if (_printTokens) {
-    std::cout << "Token read: ";
-    T->Print();
-    std::cout << std::endl;
-  }
+    // Otherwise, crank up the scanner and get a new token.
 
-  return T;
+    // Get rid of any whitespace
+    SkipWhiteSpace();
+
+    // test for end of file
+    if (buffer.isEOF()) {
+        T = new Token(EOFSYM);
+
+    } else {
+
+        // Save the starting position of the symbol in a variable,
+        // so that nicer error messages can be produced.
+        TokenColumn = buffer.CurColumn();
+
+        // Check kind of current character
+
+        // Note that _'s are now allowed in identifiers.
+        if (isalpha(CurrentCh) || '_' == CurrentCh) {
+            // grab identifier or reserved word
+            T = GetIdent();
+        } else if ('"' == CurrentCh) {
+            T = GetQuotedIdent();
+        } else if (isdigit(CurrentCh) || '-' == CurrentCh || '.' == CurrentCh) {
+            T = GetScalar();
+        } else {
+            //
+            // Check for other tokens
+            //
+
+            T = GetPunct();
+        }
+    }
+
+    if (T == NULL) {
+        throw ParserFatalException("didn't get a token");
+    }
+
+    if (_printTokens) {
+        std::cout << "Token read: ";
+        T->Print();
+        std::cout << std::endl;
+    }
+
+    return T;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -129,75 +128,64 @@ Token* Tokenizer::GetNext() {
 // Skips spaces, tabs, newlines, and comments
 //
 void Tokenizer::SkipWhiteSpace() {
-  while (isspace(CurrentCh)) {
-    GetCh();
-  }
-
-  if( '/' == CurrentCh )  // Look for comments
-  {
-    GetCh();
-    if( '/' == CurrentCh )
-    {
-      // Throw out everything until the end of the line
-      while( '\n' != CurrentCh )
-      {
+    while (isspace(CurrentCh)) {
         GetCh();
-      }
     }
-    else if ( '*' == CurrentCh )
+
+    if ('/' == CurrentCh)  // Look for comments
     {
-      int startLine = CurLine();
-      while( true )
-      {
         GetCh();
-        if( '*' == CurrentCh )
-        {
-          GetCh();
-          if( CondReadCh( '/' ) )
-            break;
-          else if ( buffer.isEOF() )
-          {
+        if ('/' == CurrentCh) {
+            // Throw out everything until the end of the line
+            while ('\n' != CurrentCh) {
+                GetCh();
+            }
+        } else if ('*' == CurrentCh) {
+            int startLine = CurLine();
+            while (true) {
+                GetCh();
+                if ('*' == CurrentCh) {
+                    GetCh();
+                    if (CondReadCh('/'))
+                        break;
+                    else if (buffer.isEOF()) {
+                        std::ostringstream ost;
+                        ost << "Unterminated comment in line ";
+                        ost << startLine;
+                        throw SyntaxErrorException(ost.str(), *this);
+                    }
+                } else if (buffer.isEOF()) {
+                    std::ostringstream ost;
+                    ost << "Unterminated comment in line ";
+                    ost << startLine;
+                    throw SyntaxErrorException(ost.str(), *this);
+                }
+            }
+        } else {
             std::ostringstream ost;
-            ost << "Unterminated comment in line ";
-            ost << startLine;
-            throw SyntaxErrorException( ost.str(), *this );
-          }
+            ost << "unexpected character: '" << CurrentCh << "'";
+            throw SyntaxErrorException(ost.str(), *this);
         }
-        else if ( buffer.isEOF() )
-        {
-          std::ostringstream ost;
-          ost << "Unterminated comment in line ";
-          ost << startLine;
-          throw SyntaxErrorException( ost.str(), *this );
-        }
-      }
-    }
-    else
-    {
-      std::ostringstream ost;
-      ost << "unexpected character: '" << CurrentCh << "'";
-	  throw SyntaxErrorException( ost.str(), *this );
-    }
 
-    SkipWhiteSpace();  // We may need to throw out
-                       //  more white space/comments
-                       // This is admittedly tail recursion...
-  }
+        SkipWhiteSpace();  // We may need to throw out
+        //  more white space/comments
+        // This is admittedly tail recursion...
+    }
 }
 
-Token* Tokenizer::GetQuotedIdent() {
-  GetCh();   // Throw out beginning '"'
+Token *Tokenizer::GetQuotedIdent() {
+    GetCh();   // Throw out beginning '"'
 
-  std::ostringstream ident;
-  while ( '"' != CurrentCh ) {
-    if( '\n' == CurrentCh )
-      throw SyntaxErrorException( "Unterminated string constant", *this );
+    std::ostringstream ident;
+    while ('"' != CurrentCh) {
+        if ('\n' == CurrentCh)
+            throw SyntaxErrorException("Unterminated string constant", *this);
 
-    ident << CurrentCh;
+        ident << CurrentCh;
+        GetCh();
+    }
     GetCh();
-  }
-  GetCh();
-  return new IdentToken( ident.str() );
+    return new IdentToken(ident.str());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -208,15 +196,15 @@ Token* Tokenizer::GetQuotedIdent() {
 //   identifier or a reserved word token.
 //
 
-Token* Tokenizer::GetIdent() {
-  // an IDENTIFIER or a RESERVED WORD token
-  std::ostringstream ident;
-  while (isalnum(CurrentCh) || '_' == CurrentCh || '-' == CurrentCh) { 
-    // While we still have something that can
-    ident << CurrentCh;
-    GetCh();
-  }
-  return SearchReserved(ident.str());
+Token *Tokenizer::GetIdent() {
+    // an IDENTIFIER or a RESERVED WORD token
+    std::ostringstream ident;
+    while (isalnum(CurrentCh) || '_' == CurrentCh || '-' == CurrentCh) {
+        // While we still have something that can
+        ident << CurrentCh;
+        GetCh();
+    }
+    return SearchReserved(ident.str());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -226,14 +214,14 @@ Token* Tokenizer::GetIdent() {
 //   GetInt scans an integer.  It returns an integer token.
 //
 
-Token* Tokenizer::GetScalar() {
-  // an INTEGER token
-  string ret( "" );
-  while (isdigit(CurrentCh) || '-' == CurrentCh || '.' == CurrentCh || 'e' == CurrentCh ) {
-    ret += CurrentCh;
-    GetCh();
-  }
-  return new ScalarToken( atof( ret.c_str() ) );
+Token *Tokenizer::GetScalar() {
+    // an INTEGER token
+    string ret("");
+    while (isdigit(CurrentCh) || '-' == CurrentCh || '.' == CurrentCh || 'e' == CurrentCh) {
+        ret += CurrentCh;
+        GetCh();
+    }
+    return new ScalarToken(atof(ret.c_str()));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -243,25 +231,46 @@ Token* Tokenizer::GetScalar() {
 //   Gets a punctuation token from input stream and returns it.
 //
 
-Token* Tokenizer::GetPunct() {
-  Token* T;
+Token *Tokenizer::GetPunct() {
+    Token *T;
 
-  switch (CurrentCh) {
-  case '(':  GetCh(); T = new Token(LPAREN);     break;
-  case ')':  GetCh(); T = new Token(RPAREN);     break;
-  case '{':  GetCh(); T = new Token(LBRACE);     break;
-  case '}':  GetCh(); T = new Token(RBRACE);     break;
-  case ',':  GetCh(); T = new Token(COMMA);      break;
-  case '=':  GetCh(); T = new Token(EQUALS);     break;
-  case ';':  GetCh(); T = new Token(SEMICOLON);  break;
+    switch (CurrentCh) {
+        case '(':
+            GetCh();
+            T = new Token(LPAREN);
+            break;
+        case ')':
+            GetCh();
+            T = new Token(RPAREN);
+            break;
+        case '{':
+            GetCh();
+            T = new Token(LBRACE);
+            break;
+        case '}':
+            GetCh();
+            T = new Token(RBRACE);
+            break;
+        case ',':
+            GetCh();
+            T = new Token(COMMA);
+            break;
+        case '=':
+            GetCh();
+            T = new Token(EQUALS);
+            break;
+        case ';':
+            GetCh();
+            T = new Token(SEMICOLON);
+            break;
 
-  default:
-    std::ostringstream ost;
-    ost << "unexpected character: '" << CurrentCh << "'";
-    throw SyntaxErrorException(ost.str(), *this);
-  }
+        default:
+            std::ostringstream ost;
+            ost << "unexpected character: '" << CurrentCh << "'";
+            throw SyntaxErrorException(ost.str(), *this);
+    }
 
-  return T;
+    return T;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -273,11 +282,11 @@ Token* Tokenizer::GetPunct() {
 //   at a time this way and this token is pointed to by the pointer
 //   TokenToUnGet.  TokenToUnGet must be non null.
 
-void Tokenizer::UnGet(Token* TokenToUnGet) {
-  if (UnGetToken != NULL) {
-    throw ParserFatalException("trying to UnGet more than one token");
-  }
-  UnGetToken = TokenToUnGet;
+void Tokenizer::UnGet(Token *TokenToUnGet) {
+    if (UnGetToken != NULL) {
+        throw ParserFatalException("trying to UnGet more than one token");
+    }
+    UnGetToken = TokenToUnGet;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -287,10 +296,10 @@ void Tokenizer::UnGet(Token* TokenToUnGet) {
 //   Peek reads the next token and pushes it back on the token stream
 //
 
-const Token* Tokenizer::Peek() {
-  Token* T = GetNext();
-  UnGet(T);
-  return T;
+const Token *Tokenizer::Peek() {
+    Token *T = GetNext();
+    UnGet(T);
+    return T;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -301,13 +310,13 @@ const Token* Tokenizer::Peek() {
 //
 
 unique_ptr<Token> Tokenizer::Read(SYMBOL kind) {
-  unique_ptr<Token> T( Get() );
-  if (T->kind() != kind) {
-    string msg( getNameForToken( kind ) );
-    msg.append( " expected" );
-    throw SyntaxErrorException(msg, *this);
-  }
-  return T;
+    unique_ptr<Token> T(Get());
+    if (T->kind() != kind) {
+        string msg(getNameForToken(kind));
+        msg.append(" expected");
+        throw SyntaxErrorException(msg, *this);
+    }
+    return T;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -320,13 +329,13 @@ unique_ptr<Token> Tokenizer::Read(SYMBOL kind) {
 //
 
 bool Tokenizer::CondRead(SYMBOL kind) {
-  const Token* T = Peek();
-  if (T->kind() == kind) {
-    Get( );
-    return true;
-  } else {
-    return false;
-  }
+    const Token *T = Peek();
+    if (T->kind() == kind) {
+        Get();
+        return true;
+    } else {
+        return false;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -345,16 +354,13 @@ bool Tokenizer::CondRead(SYMBOL kind) {
 
 typedef std::map<string, SYMBOL> ReservedWordsMap;
 
-Token* Tokenizer::SearchReserved(const string& ident) const {
-  SYMBOL tokSymbol = lookupReservedWord( ident );
-  if( UNKNOWN == tokSymbol )
-  {
-    return new IdentToken( ident );
-  }
-  else
-  {
-    return new Token( tokSymbol );
-  }
+Token *Tokenizer::SearchReserved(const string &ident) const {
+    SYMBOL tokSymbol = lookupReservedWord(ident);
+    if (UNKNOWN == tokSymbol) {
+        return new IdentToken(ident);
+    } else {
+        return new Token(tokSymbol);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -367,10 +373,10 @@ Token* Tokenizer::SearchReserved(const string& ident) const {
 //
 
 bool Tokenizer::CondReadCh(char c) {
-  if (c == CurrentCh) {
-    GetCh();
-    return true;
-  } else {
-    return false;
-  }
+    if (c == CurrentCh) {
+        GetCh();
+        return true;
+    } else {
+        return false;
+    }
 }

@@ -15,13 +15,6 @@ extern bool debugMode;
 Material::~Material() {
 }
 
-// Apply the phong model to this point on the surface of the object, returning
-// the color of that point.
-glm::dvec3 Material::shade(Scene *scene, const ray &r, const isect &i) const {
-    // heeta heeta hoota
-    return kd(i);
-}
-
 TextureMap::TextureMap(string filename) {
     data = readImage(filename.c_str(), width, height);
     if (data.empty()) {

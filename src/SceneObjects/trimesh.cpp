@@ -1,4 +1,4 @@
-#include "trimesh.h"
+#include "../scene/scene.h"
 #include <assert.h>
 #include <float.h>
 #include <string.h>
@@ -10,8 +10,8 @@ extern TraceUI *traceUI;
 
 using namespace std;
 
-TrimeshFace::TrimeshFace(Scene *scene, Material *mat, Trimesh *parent, int a, int b, int c)
-        : MaterialSceneObject(scene, mat) {
+TrimeshFace::TrimeshFace(const Material &mat, Trimesh *parent, int a, int b, int c)
+        : Geometry(mat) {
     this->parent = parent;
     ids[0] = a;
     ids[1] = b;
@@ -38,27 +38,24 @@ TrimeshFace::TrimeshFace(Scene *scene, Material *mat, Trimesh *parent, int a, in
         vInv = glm::dvec3(inv[0][1], inv[1][1], inv[2][1]);
         nInv = glm::dvec3(inv[0][2], inv[1][2], inv[2][2]);
     }
-    localbounds = computeLocalBoundingBox();
-    bounds = localbounds;
+    bounds = computeLocalBoundingBox();
 }
 
 BoundingBox TrimeshFace::computeLocalBoundingBox() {
-    BoundingBox localbounds;
-    localbounds.setMax(glm::max(parent->vertices[ids[0]],
-                                parent->vertices[ids[1]]));
-    localbounds.setMin(glm::min(parent->vertices[ids[0]],
-                                parent->vertices[ids[1]]));
+    BoundingBox bb;
+    bb.setMax(glm::max(parent->vertices[ids[0]],
+                       parent->vertices[ids[1]]));
+    bb.setMin(glm::min(parent->vertices[ids[0]],
+                       parent->vertices[ids[1]]));
 
-    localbounds.setMax(glm::max(parent->vertices[ids[2]],
-                                localbounds.getMax()));
-    localbounds.setMin(glm::min(parent->vertices[ids[2]],
-                                localbounds.getMin()));
-    return localbounds;
+    bb.setMax(glm::max(parent->vertices[ids[2]],
+                       bb.getMax()));
+    bb.setMin(glm::min(parent->vertices[ids[2]],
+                       bb.getMin()));
+    return bb;
 }
 
 Trimesh::~Trimesh() {
-    for (auto m : materials)
-        delete m;
     for (auto f : faces)
         delete f;
 }
@@ -68,7 +65,7 @@ void Trimesh::addVertex(const glm::dvec3 &v) {
     vertices.emplace_back(v);
 }
 
-void Trimesh::addMaterial(Material *m) {
+void Trimesh::addMaterial(const Material &m) {
     materials.emplace_back(m);
 }
 
@@ -83,9 +80,7 @@ bool Trimesh::addFace(int a, int b, int c) {
     if (a >= vcnt || b >= vcnt || c >= vcnt)
         return false;
 
-    TrimeshFace *newFace = new TrimeshFace(
-            scene, new Material(*this->material), this, a, b, c);
-    newFace->setTransform(this->transform);
+    auto newFace = new TrimeshFace(material, this, a, b, c);
     if (!newFace->degen)
         faces.push_back(newFace);
     else
@@ -104,7 +99,7 @@ const char *Trimesh::doubleCheck() {
     if (!normals.empty() && normals.size() != vertices.size())
         return "Bad Trimesh: Wrong number of normals.";
 
-    return 0;
+    return nullptr;
 }
 
 // Once all the verts and faces are loaded, per vertex normals can be
@@ -127,26 +122,13 @@ void Trimesh::generateNormals() {
         if (numFaces[i])
             normals[i] /= numFaces[i];
     }
-
-    vertNorms = true;
 }
 
 //////////////////////////
 /// Intersection tests ///
 //////////////////////////
 
-bool Trimesh::intersectLocal(ray &r, isect &i) const {
-    return bvh.traverse(r, i);
-}
-
 bool TrimeshFace::intersect(ray &r, isect &i) const {
-    return intersectLocal(r, i);
-}
-
-// Intersect ray r with the triangle abc.  If it hits returns true,
-// and put the parameter in t and the barycentric coordinates of the
-// intersection in u (alpha) and v (beta).
-bool TrimeshFace::intersectLocal(ray &r, isect &i) const {
     auto p = r.getPosition() - parent->vertices[ids[0]];
     auto d = r.getDirection();
     auto p_z = glm::dot(nInv, p);
@@ -166,14 +148,13 @@ bool TrimeshFace::intersectLocal(ray &r, isect &i) const {
     if (u < 0 || u > 1 || v < 0 || v > 1 || u + v > 1)
         return false;
 
-    i.setObject(this);
     i.setT(t);
     if (parent->materials.empty()) {
         i.setMaterial(this->getMaterial());
     } else {
-        Material m0 = *parent->materials[ids[0]];
-        Material m1 = *parent->materials[ids[1]];
-        Material m2 = *parent->materials[ids[2]];
+        Material m0 = parent->materials[ids[0]];
+        Material m1 = parent->materials[ids[1]];
+        Material m2 = parent->materials[ids[2]];
         m0 = w * m0;
         m1 = u * m1;
         m2 = v * m2;

@@ -10,14 +10,14 @@ class Camera
 {
 public:
     Camera();
-    void rayThrough( double x, double y, ray &r );
+    void rayThrough( double x, double y, ray &r ) const;
     void setEye( const glm::dvec3 &eye );
     void setLook( double, double, double, double );
     void setLook( const glm::dvec3 &viewDir, const glm::dvec3 &upDir );
     void setFOV( double );
     void setAspectRatio( double );
 
-    double getAspectRatio() { return aspectRatio; }
+    double getAspectRatio() const { return aspectRatio; }
 
 	const glm::dvec3& getEye() const			{ return eye; }
 	const glm::dvec3& getLook() const		{ return look; }
