@@ -1,4 +1,5 @@
 #include "../RayTracer.h"
+#include "cuda.h"
 
 
 /*
@@ -7,24 +8,18 @@
 */
 
 
-__global__
+__device__
 void traceRayGPU(){
-
-    // int num_blocks = 1;
-    // int block_size = 1;
+    printf("hello from the ray trace gpu code\n");
 
 
 }
 
 //shoots primary ray
-__global__
+__device__
 void traceGPU(){
 
-    int num_blocks = 1;
-    int block_size = 1;
-
-    //traceRayGPU<<<num_blocks, block_size>>>();
-    //cudaDeviceSynchronize();
+    traceRayGPU();
 
 }
 
@@ -34,15 +29,7 @@ void traceGPU(){
 __global__
 void tracePixelGPU(){
 
-    int num_blocks = 1;
-    int block_size = 1;
-
-    //JK WE DONT HAVE THE ARCH TO SUPPORT THIS
-    //traceGPU<<<num_blocks, block_size>>>();
-
-    //can use the following to wait on children kernels
-    //cudaDeviceSynchronize();
-
+    traceGPU();
 
 }
 
@@ -50,6 +37,8 @@ __host__
 void RayTracer::traceImageGPU(int w, int h) {
     //sets up buffers, updates ui parameters
     traceSetup(w, h);
+
+    //convert pixel buffer into not glm::vec3?
 
     /*
         copy pixel buffer onto device 
