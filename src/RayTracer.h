@@ -33,6 +33,8 @@ public:
 	glm::dvec3 traceRay(ray& r, const glm::dvec3& thresh, int depth,
 	                    double& length);
 
+
+
 	glm::dvec3 getPixel(int i, int j);
 	void setPixel(int i, int j, glm::dvec3 color);
 	void getBuffer(unsigned char*& buf, int& w, int& h);
@@ -57,6 +59,7 @@ public:
 
 private:
 	glm::dvec3 trace(double x, double y);
+
 
 	std::vector<unsigned char> buffer;
 	int buffer_width, buffer_height;
