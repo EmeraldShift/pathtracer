@@ -153,8 +153,8 @@ glm::dvec3 RayTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth) {
     glm::dvec3 rad(0);
 
     auto diffuse = glm::length(i.getMaterial().kd(i));
-    auto reflect = glm::length(i.getMaterial().kr(i));
-    auto refract = glm::length(i.getMaterial().kt(i));
+    auto reflect = i.getMaterial().kr(i).x;
+    auto refract = i.getMaterial().kt(i).x;
     auto rand = random<double>(0, diffuse + reflect + refract);
 
     auto refl = r.getDirection() - 2.0 * i.getN() * glm::dot(i.getN(), r.getDirection());

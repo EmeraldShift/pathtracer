@@ -19,18 +19,11 @@ struct Cluster {
     Obj obj;
 
     bool intersect(ray &r, isect &i) {
-        if (obj) {
-            isect cur;
-            if (obj->intersect(r, cur) && cur.getT() < i.getT()) {
-                i = cur;
-                return true;
-            }
-            return false;
-        } else {
-            double d = i.getT();
-            return (left->bbox.intersect(r, d + RAY_EPSILON) && left->intersect(r, i))
-                   | (right->bbox.intersect(r, d + RAY_EPSILON) && right->intersect(r, i));
-        }
+        if (obj)
+            return obj->intersect(r, i);
+        else
+            return (left->bbox.intersect(r, i.getT()) && left->intersect(r, i))
+                   | (right->bbox.intersect(r, i.getT()) && right->intersect(r, i));
     }
 };
 
@@ -73,7 +66,7 @@ static double area(BoundingBox &bb) {
     auto y = max[1] - min[1];
     auto z = max[2] - min[2];
     auto a = 2.0 * (x * y + y * z + z * x);
-    return a == 0 ? 1e308 : a; // Default empty bbox to infinite area
+    return a < RAY_EPSILON ? 1e308 : a; // Default empty bbox to infinite area
 }
 
 static double sah(int n_l, double s_l, int n_r, double s_r, double s_p) {
