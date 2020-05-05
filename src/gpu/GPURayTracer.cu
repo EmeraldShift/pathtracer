@@ -16,7 +16,7 @@ void traceRayGPU(){
 }
 
 //shoots primary ray
-__global__
+__device__
 void traceGPU(){
 
     traceRayGPU();
