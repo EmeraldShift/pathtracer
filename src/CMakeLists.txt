@@ -2,7 +2,6 @@ SET(pwd ${CMAKE_CURRENT_LIST_DIR})
 cmake_minimum_required(VERSION 3.8)
 find_package(CUDA QUIET REQUIRED)
 
-#project (ray LANGUAGES CUDA)
 
 UNSET(src)
 
@@ -35,17 +34,25 @@ ENDIF (WIN32)
 
 message(STATUS "ray added, files ${src}")
 
-#handles suppressing glm warnings that nvcc gives
 enable_language(CUDA)
-#set(CUDA_NVCC_FLAGS -w -Xcudafe="--diag_suppress=2886" --diag_suppress=esa_on_defaulted_function_ignored)
 set(CUDA_SEPARABLE_COMPILATION ON)
 set(CUDA_HOST_COMPILATION_CPP ON)
 
+#attempt to surpress warnings
+#set(CMAKE_CUDA_FLAGS -w -Xcudafe="--diag_suppress=2886" --diag_suppress=esa_on_defaulted_function_ignored)
+
+#https://devblogs.nvidia.com/introduction-cuda-dynamic-parallelism/
+#attempt to get it to recognize sm_60 and dynamic parallelism
+#set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS};-arch=sm_60;-lcudadevrt;-rdc=true")
+
 target_link_libraries(ray ${OPENGL_gl_LIBRARY})
+
+#FLTK not on eldar
 #SET(FLTK_SKIP_FLUID TRUE)
 #FIND_PACKAGE(FLTK REQUIRED)
 #SET_PROPERTY(TARGET ray APPEND PROPERTY INCLUDE_DIRECTORIES ${FLTK_INCLUDE_DIR})
 #target_link_libraries(ray ${FLTK_LIBRARIES})
+
 FIND_PACKAGE(JPEG REQUIRED)
 target_link_libraries(ray ${JPEG_LIBRARIES})
 FIND_PACKAGE(PNG REQUIRED)
