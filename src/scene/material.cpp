@@ -40,14 +40,24 @@ glm::dvec3 TextureMap::getPixelAt(int x, int y) const {
 }
 
 glm::dvec3 MaterialParameter::value(const isect &is) const {
-    if (0 != _textureMap)
+    if (_textureMap)
         return _textureMap->getMappedValue(is.getUVCoordinates());
     else
         return _value;
 }
 
+/**
+ * Intensity is a scalar representing roughly the "brightness" of a
+ * given value. It is weighted component-wise since the human eye
+ * perceives different colors to have different intensities.
+ * It is guaranteed that a scalar MaterialParameter will return that
+ * same scalar as its intensity.
+ *
+ * @param is The intersection point at which to sample the intensity
+ * @return The intensity.
+ */
 double MaterialParameter::intensityValue(const isect &is) const {
-    if (0 != _textureMap) {
+    if (_textureMap) {
         glm::dvec3 value(
                 _textureMap->getMappedValue(is.getUVCoordinates()));
         return (0.299 * value[0]) + (0.587 * value[1]) +

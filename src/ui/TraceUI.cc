@@ -30,16 +30,6 @@ void load(Json& j, const string& field, T& target)
 
 bool TraceUI::m_debug;
 
-TraceUI::TraceUI()
-{
-	for (unsigned int i = 0; i < MAX_THREADS; i++)
-		rayCount[i] = 0;
-}
-
-TraceUI::~TraceUI()
-{
-}
-
 void TraceUI::setCubeMap(CubeMap* cm)
 {
 	cubemap.reset(cm);

@@ -1,7 +1,7 @@
 #include <cmath>
 
 #include "scene.h"
-#include "../SceneObjects/Sphere.h"
+#include "../SceneObjects/sphere.h"
 #include <iostream>
 
 using namespace std;

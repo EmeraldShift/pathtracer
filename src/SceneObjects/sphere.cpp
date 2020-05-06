@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include "Sphere.h"
+#include "sphere.h"
 #include <glm/gtx/io.hpp>
 
 using namespace std;

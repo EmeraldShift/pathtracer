@@ -8,5 +8,13 @@
 #define printf(f, ...) ((void)(f, __VA_ARGS__),0)
 #endif
 
+#ifdef __CUDACC__
+#define CUDA_CALLABLE_MEMBER __host__ __device__
+#define CUDA_GLOBAL __global__
+#else
+#define CUDA_CALLABLE_MEMBER
+#define CUDA_GLOBAL
+#endif
+
 void print_from_gpu();
 #endif

@@ -1,3 +1,13 @@
 #pragma once
 
-void
+#include "cuda.h"
+#include "../tracer.h"
+
+class GpuTracer : public Tracer {
+public:
+    GpuTracer(TraceUI *ui) : Tracer(ui) {}
+
+    void GpuTracer::traceImage(int width, int height) override;
+
+    void waitRender() override;
+};

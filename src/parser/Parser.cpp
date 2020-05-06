@@ -560,7 +560,6 @@ void Parser::parseTrimesh(Scene *scene, TransformNode *transform, const Material
                 if (generateNormals)
                     mesh->generateNormals();
 
-
                 if ((error = mesh->doubleCheck()))
                     throw ParserException(error);
 
@@ -833,11 +832,10 @@ Material Parser::parseMaterial(Scene *scene, const Material &parent) {
                 mat.setEmissive(parseVec3dMaterialParameter(scene));
                 break;
             case AMBIENT:
-                mat.setAmbient(parseVec3dMaterialParameter(scene));
+                parseVec3dMaterialParameter(scene);
                 break;
             case SPECULAR: {
-                MaterialParameter specular = parseVec3dMaterialParameter(scene);
-                mat.setSpecular(specular);
+                parseVec3dMaterialParameter(scene);
                 break;
             }
             case DIFFUSE:
@@ -854,7 +852,7 @@ Material Parser::parseMaterial(Scene *scene, const Material &parent) {
                 mat.setIndex(parseScalarMaterialParameter(scene));
                 break;
             case SHININESS:
-                mat.setShininess(parseScalarMaterialParameter(scene));
+                parseScalarMaterialParameter(scene);
                 break;
             case NAME:
                 _tokenizer.Read(NAME);

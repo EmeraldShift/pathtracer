@@ -1,5 +1,6 @@
 #include "../scene/scene.h"
 #include <cmath>
+#include <glm/gtx/io.hpp>
 
 using namespace std;
 
@@ -117,10 +118,6 @@ void Trimesh::generateNormals() {
     }
 }
 
-//////////////////////////
-/// Intersection tests ///
-//////////////////////////
-
 bool TrimeshFace::intersect(ray &r, isect &i) const {
     auto p = r.getPosition() - parent->vertices[ids[0]];
     auto d = r.getDirection();
@@ -142,6 +139,7 @@ bool TrimeshFace::intersect(ray &r, isect &i) const {
         return false;
 
     i.setT(t);
+    i.setUVCoordinates(glm::dvec2(u, v));
     if (parent->materials.empty()) {
         i.setMaterial(this->getMaterial());
     } else {

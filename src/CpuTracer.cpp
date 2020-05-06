@@ -53,6 +53,7 @@ static glm::dvec3 randomVecFromHemisphere(glm::dvec3 normal) {
 }
 
 constexpr int granularity = 32;
+
 void CpuTracer::traceImage(int w, int h) {
     for (int y = 0; y < h; y += granularity) {
         for (int x = 0; x < w; x += granularity) {
@@ -82,7 +83,7 @@ void CpuTracer::traceImage(int w, int h) {
                 }
                 for (int y = work->minY; y < work->maxY; y++)
                     for (int x = work->minX; x < work->maxX; x++)
-                        tracePixel(x, y);
+                        setPixel(x, y, tracePixel(x, y));
                 delete work;
 
                 // Announce progress
@@ -96,22 +97,17 @@ void CpuTracer::traceImage(int w, int h) {
 }
 
 glm::dvec3 CpuTracer::tracePixel(int i, int j) {
-    glm::dvec3 col(0, 0, 0);
-
-    if (!sceneLoaded()) return col;
-
-    unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
-
-    double x = double(i);
-    double y = double(j);
+    if (!sceneLoaded())
+        return glm::dvec3();
     auto sum = glm::dvec3();
-    for (auto xx = x - 0.5 + 1.0 / (2.0 * samples); xx < x + 0.5; xx += 1.0 / samples)
-        for (auto yy = y - 0.5 + 1.0 / (2.0 * samples); yy < y + 0.5; yy += 1.0 / samples)
-            sum += trace(xx / (double) buffer_width, yy / (double) buffer_height);
-    col = sum / ((double) samples * samples);
-
-    setPixel(i, j, col);
-    return col;
+    for (auto x = 0; x < samples; x++) {
+        for (auto y = 0; y < samples; y++) {
+            auto xx = double(i) - 0.5 + (1 + 2 * x) / (2.0 * samples);
+            auto yy = double(j) - 0.5 + (1 + 2 * y) / (2.0 * samples);
+            sum += trace(xx / double(buffer_width), yy / double(buffer_height));
+        }
+    }
+    return sum / ((double) samples * samples);
 }
 
 glm::dvec3 CpuTracer::trace(double x, double y) {
@@ -178,7 +174,8 @@ glm::dvec3 CpuTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth) {
         }
     } else if (rand < refract + reflect) {
         ray rr(hitOuter, refl);
-        auto w = i.getMaterial().kd(i) / 1.0;
+        auto color = i.getMaterial().kd(i) + glm::dvec3(0.15, 0.15, 0.15); // Makes even black a little reflective
+        auto w = glm::sqrt(color) / 1.0;
         rad = w * traceRay(rr, w * thresh, depth - 1);
     } else {
         auto basis = getBasis(i.getN());
@@ -186,11 +183,6 @@ glm::dvec3 CpuTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth) {
         ray rr(hitOuter, dir);
         auto w = i.getMaterial().kd(i) / 1.0;
         rad = w * traceRay(rr, w * thresh, depth - 1);
-        if (std::isnan(rad[0])) {
-            std::cout << "(" << w << std::endl;
-            std::cout << "oof! " << i.getN() << ", " << basis.first << ", " << basis.second << ", " << refl << ", " << w
-                      << std::endl;
-        }
     }
     return i.getMaterial().ke(i) * 32.0 + rad;
 }

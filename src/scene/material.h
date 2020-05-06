@@ -79,16 +79,18 @@ private:
 class MaterialParameter {
 public:
     explicit MaterialParameter(const glm::dvec3 &par)
-            : _value(par), _textureMap(nullptr) {}
+            : _value(par) {
+    }
 
     explicit MaterialParameter(const double par)
-            : _value(par, par, par), _textureMap(nullptr) {}
+            : _value(par, par, par) {
+    }
 
     explicit MaterialParameter(TextureMap *tex)
-            : _textureMap(tex) {}
+            : _textureMap(tex) {
+    }
 
-    MaterialParameter()
-            : _value(0.0, 0.0, 0.0), _textureMap(nullptr) {}
+    MaterialParameter() = default;
 
     MaterialParameter &operator*=(const MaterialParameter &rhs) {
         (*this) *= rhs._value;
@@ -96,9 +98,10 @@ public:
     }
 
     glm::dvec3 &operator*=(const glm::dvec3 &rhs) {
-        _value[0] *= rhs[0];
-        _value[1] *= rhs[1];
-        _value[2] *= rhs[2];
+        _value += rhs;
+//        _value[0] *= rhs[0];
+//        _value[1] *= rhs[1];
+//        _value[2] *= rhs[2];
         return _value;
     }
 
@@ -114,8 +117,6 @@ public:
         return *this;
     }
 
-    bool isZero() { return glm::length(_value) == 0.0; }
-
     glm::dvec3 &operator+=(const glm::dvec3 &rhs) {
         _value += rhs;
         return _value;
@@ -130,39 +131,28 @@ public:
     bool mapped() const { return _textureMap != nullptr; }
 
 private:
-    glm::dvec3 _value;
-    TextureMap *_textureMap;
+    glm::dvec3 _value = glm::dvec3(0);
+    TextureMap *_textureMap = nullptr;
 };
 
 class Material {
 
 public:
-    Material()
-            : _ke(glm::dvec3(0.0, 0.0, 0.0)),
-              _ka(glm::dvec3(0.0, 0.0, 0.0)),
-              _ks(glm::dvec3(0.0, 0.0, 0.0)),
-              _kd(glm::dvec3(0.0, 0.0, 0.0)),
-              _kr(glm::dvec3(0.0, 0.0, 0.0)),
-              _kt(glm::dvec3(0.0, 0.0, 0.0)),
-              _shininess(0.0), _index(1.0) {}
+    Material() = default;
 
     virtual ~Material();
 
     Material(const glm::dvec3 &e, const glm::dvec3 &a, const glm::dvec3 &s,
              const glm::dvec3 &d, const glm::dvec3 &r, const glm::dvec3 &t, double sh, double in)
-            : _ke(e), _ka(a), _ks(s), _kd(d), _kr(r), _kt(t),
-              _shininess(glm::dvec3(sh, sh, sh)), _index(glm::dvec3(in, in, in)) {}
+            : _ke(e), _kd(d), _kr(r), _kt(t), _index(glm::dvec3(in, in, in)) {}
 
     Material &
     operator+=(const Material &m) {
         _ke += m._ke;
-        _ka += m._ka;
-        _ks += m._ks;
         _kd += m._kd;
         _kr += m._kr;
         _kt += m._kt;
         _index += m._index;
-        _shininess += m._shininess;
         return *this;
     }
 
@@ -185,10 +175,6 @@ public:
     // setting functions taking MaterialParameters
     void setEmissive(const MaterialParameter &ke) { _ke = ke; }
 
-    void setAmbient(const MaterialParameter &ka) { _ka = ka; }
-
-    void setSpecular(const MaterialParameter &ks) { _ks = ks; }
-
     void setDiffuse(const MaterialParameter &kd) { _kd = kd; }
 
     void setReflective(const MaterialParameter &kr) {
@@ -199,20 +185,14 @@ public:
         _kt = kt;
     }
 
-    void setShininess(const MaterialParameter &shininess) { _shininess = shininess; }
-
     void setIndex(const MaterialParameter &index) { _index = index; }
 
 private:
-    MaterialParameter _ke;                    // emissive
-    MaterialParameter _ka;                    // ambient
-    MaterialParameter _ks;                    // specular
-    MaterialParameter _kd;                    // diffuse
-    MaterialParameter _kr;                    // reflective
-    MaterialParameter _kt;                    // transmissive
-
-    MaterialParameter _shininess;
-    MaterialParameter _index;                 // index of refraction
+    MaterialParameter _ke = MaterialParameter(glm::dvec3(0));
+    MaterialParameter _kd = MaterialParameter(glm::dvec3(0));
+    MaterialParameter _kr = MaterialParameter(glm::dvec3(0));
+    MaterialParameter _kt = MaterialParameter(glm::dvec3(0));
+    MaterialParameter _index = MaterialParameter(1.0);
 };
 
 // This doesn't necessarily make sense for mapped materials

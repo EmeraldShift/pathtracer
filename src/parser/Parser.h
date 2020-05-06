@@ -16,7 +16,7 @@
 #include <list>
 
 #include "../scene/scene.h"
-#include "../SceneObjects/Sphere.h"
+#include "../SceneObjects/sphere.h"
 
 typedef std::map<string, Material> mmap;
 
