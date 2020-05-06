@@ -1,9 +1,8 @@
+#include "sphere.h"
+
 #include <cmath>
 
-#include "sphere.h"
 #include <glm/gtx/io.hpp>
-
-using namespace std;
 
 bool Sphere::intersect(ray &r, isect &i) const {
     auto pos = r.getPosition();
@@ -23,14 +22,14 @@ bool Sphere::intersect(ray &r, isect &i) const {
     double t1 = dot - discriminant;
 
     if (t1 > RAY_EPSILON && t1 < i.getT()) {
-        auto col = this->getMaterial().kd(i);
+        auto col = mat.kd(i);
         i.setT(t1);
-        i.setMaterial(this->getMaterial());
+        i.setMaterial(mat);
         i.setN(glm::normalize(r.at(t1) - position));
         return true;
     } else if (t2 < i.getT()) {
         i.setT(t2);
-        i.setMaterial(this->getMaterial());
+        i.setMaterial(mat);
         i.setN(glm::normalize(r.at(t2) - position));
         return true;
     }

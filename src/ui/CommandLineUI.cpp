@@ -1,5 +1,5 @@
-#include <stdarg.h>
-#include <time.h>
+#include <cstdarg>
+#include <ctime>
 #include <iostream>
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -9,14 +9,12 @@ extern int optind, opterr, optopt;
 extern int getopt(int argc, char** argv, const char* optstring);
 #endif
 
-#include <assert.h>
+#include <cassert>
 
 #include "../fileio/images.h"
 #include "CommandLineUI.h"
 
 #include "../tracer.h"
-
-using namespace std;
 
 // The command line UI simply parses out all the arguments off
 // the command line and stores them locally.
@@ -77,10 +75,8 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
 
 int CommandLineUI::run()
 {
-	assert(raytracer != 0);
-	raytracer->loadScene(rayName);
-
-	if (raytracer->sceneLoaded()) {
+	assert(raytracer != nullptr);
+	if (raytracer->loadScene(rayName)) {
 		int width = m_nSize;
 		int height = std::round(width / raytracer->aspectRatio() + 0.5);
 
@@ -111,17 +107,16 @@ int CommandLineUI::run()
 	} else {
 		std::cerr << "Unable to load ray file '" << rayName << "'"
 		          << std::endl;
-		return (1);
+		return 1;
 	}
 }
 
 void CommandLineUI::usage()
 {
-	using namespace std;
-	cerr << "usage: " << progName
-	     << " [options] [input.ray output.png]" << endl
-	     << "  -r <#>      set recursion level (default " << m_nDepth << ")" << endl
-	     << "  -w <#>      set output image width (default " << m_nSize << ")" << endl
-	     << "  -j <FILE>   set parameters from JSON file" << endl
-	     << "  -c <FILE>   one Cubemap file, the remainings will be detected automatically" << endl;
+	std::cerr << "usage: " << progName
+	     << " [options] [input.ray output.png]" << std::endl
+	     << "  -r <#>      set recursion level (default " << m_nDepth << ")" << std::endl
+	     << "  -w <#>      set output image width (default " << m_nSize << ")" << std::endl
+	     << "  -j <FILE>   set parameters from JSON file" << std::endl
+	     << "  -c <FILE>   one Cubemap file, the remainings will be detected automatically" << std::endl;
 }

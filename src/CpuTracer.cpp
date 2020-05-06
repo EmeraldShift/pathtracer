@@ -97,8 +97,6 @@ void CpuTracer::traceImage(int w, int h) {
 }
 
 glm::dvec3 CpuTracer::tracePixel(int i, int j) {
-    if (!sceneLoaded())
-        return glm::dvec3();
     auto sum = glm::dvec3();
     for (auto x = 0; x < samples; x++) {
         for (auto y = 0; y < samples; y++) {
@@ -111,10 +109,6 @@ glm::dvec3 CpuTracer::tracePixel(int i, int j) {
 }
 
 glm::dvec3 CpuTracer::trace(double x, double y) {
-    // Clear out the ray cache in the scene for debugging purposes,
-    if (TraceUI::m_debug)
-        scene->intersectCache.clear();
-
     ray r(glm::dvec3(0, 0, 0), glm::dvec3(0, 0, 0));
     scene->getCamera().rayThrough(x, y, r);
     glm::dvec3 ret = traceRay(r, glm::dvec3(1.0, 1.0, 1.0), depth);

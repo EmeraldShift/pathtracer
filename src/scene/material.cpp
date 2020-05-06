@@ -5,10 +5,7 @@
 #include <algorithm>
 #include "../fileio/images.h"
 
-Material::~Material() {
-}
-
-TextureMap::TextureMap(string filename) {
+TextureMap::TextureMap(const string& filename) {
     data = readImage(filename.c_str(), width, height);
     if (data.empty()) {
         width = 0;

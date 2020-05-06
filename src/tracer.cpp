@@ -17,8 +17,6 @@
 #include <fstream>
 #include <random>
 
-using namespace std;
-
 constexpr double W = 2.0;
 constexpr double exposureBias = 2.0;
 static double hable(double x) {
@@ -38,21 +36,21 @@ void Tracer::getBuffer(unsigned char *&buf, int &w, int &h) {
 }
 
 double Tracer::aspectRatio() {
-    return sceneLoaded() ? scene->getCamera().getAspectRatio() : 1;
+    return scene->getCamera().getAspectRatio();
 }
 
 bool Tracer::loadScene(const char *fn) {
-    ifstream ifs(fn);
+    std::ifstream ifs(fn);
     if (!ifs) {
-        string msg("Error: couldn't read scene file ");
+        std::string msg("Error: couldn't read scene file ");
         msg.append(fn);
         std::cerr << msg << std::endl;
         return false;
     }
 
     // Strip off filename, leaving only the path:
-    string path(fn);
-    if (path.find_last_of("\\/") == string::npos)
+    std::string path(fn);
+    if (path.find_last_of("\\/") == std::string::npos)
         path = ".";
     else
         path = path.substr(0, path.find_last_of("\\/"));
@@ -67,23 +65,20 @@ bool Tracer::loadScene(const char *fn) {
         std::cerr << pe.formattedMessage() << std::endl;
         return false;
     } catch (ParserException &pe) {
-        string msg("Parser: fatal exception ");
+        std::string msg("Parser: fatal exception ");
         msg.append(pe.message());
         std::cerr << msg << std::endl;
         return false;
     } catch (TextureMapException e) {
-        string msg("Texture mapping exception: ");
+        std::string msg("Texture mapping exception: ");
         msg.append(e.message());
         std::cerr << msg << std::endl;
         return false;
     }
 
-    if (!sceneLoaded())
-        return false;
-
-    scene->constructBvh();
-
-    return true;
+    if (scene)
+        scene->constructBvh();
+    return scene != nullptr;
 }
 
 void Tracer::traceSetup(int w, int h) {

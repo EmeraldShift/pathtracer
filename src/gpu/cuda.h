@@ -1,5 +1,5 @@
-#ifndef __cuda_hello__
-#define __cuda_hello__
+#pragma once
+
 #include <stdio.h>
 
 // printf() is only supported
@@ -17,4 +17,3 @@
 #endif
 
 void print_from_gpu();
-#endif

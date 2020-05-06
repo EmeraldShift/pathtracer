@@ -7,6 +7,8 @@
 #ifndef __MATERIAL_H__
 #define __MATERIAL_H__
 
+#include "../gpu/cuda.h"
+
 #include <utility>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -30,7 +32,7 @@ using std::string;
  */
 class TextureMap {
 public:
-    explicit TextureMap(string filename);
+    explicit TextureMap(const string& filename);
 
     // Return the mapped value; here the coordinate
     // is assumed to be within the parametrization space:
@@ -56,10 +58,10 @@ class TextureMapException {
 public:
     explicit TextureMapException(string errorMsg) : _errorMsg(std::move(errorMsg)) {}
 
-    string message() { return _errorMsg; }
+    std::string message() { return _errorMsg; }
 
 private:
-    string _errorMsg;
+    std::string _errorMsg;
 };
 
 /*
@@ -140,10 +142,10 @@ class Material {
 public:
     Material() = default;
 
-    virtual ~Material();
+    virtual ~Material() = default;
 
-    Material(const glm::dvec3 &e, const glm::dvec3 &a, const glm::dvec3 &s,
-             const glm::dvec3 &d, const glm::dvec3 &r, const glm::dvec3 &t, double sh, double in)
+    Material(const glm::dvec3 &e, const glm::dvec3 &d,
+             const glm::dvec3 &r, const glm::dvec3 &t, double in)
             : _ke(e), _kd(d), _kr(r), _kt(t), _index(glm::dvec3(in, in, in)) {}
 
     Material &
@@ -199,13 +201,10 @@ private:
 inline Material
 operator*(double d, Material m) {
     m._ke *= d;
-    m._ka *= d;
-    m._ks *= d;
     m._kd *= d;
     m._kr *= d;
     m._kt *= d;
     m._index *= d;
-    m._shininess *= d;
     return m;
 }
 

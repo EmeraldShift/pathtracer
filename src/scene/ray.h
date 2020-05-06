@@ -7,7 +7,7 @@
 #include <glm/vec3.hpp>
 #include <memory>
 
-class MaterialSceneObject;
+class MaterialObject;
 
 // I don't know if even an inline function can be called frmo CUDA, so
 // this is just to be extra safe

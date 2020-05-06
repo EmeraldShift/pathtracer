@@ -1,11 +1,12 @@
 #pragma once
 
 #include "../gl.h"
+#include "ray.h"
+#include "bbox.h"
+#include "../gpu/cuda.h"
 #include <set>
 #include <queue>
 #include <iostream>
-#include "ray.h"
-#include "bbox.h"
 
 /**
  * A cluster class to represent a collection of spatially grouped objects
@@ -18,7 +19,7 @@ struct Cluster {
     Cluster *left, *right;
     Obj obj;
 
-    bool intersect(ray &r, isect &i) {
+    CUDA_CALLABLE_MEMBER bool intersect(ray &r, isect &i) {
         if (obj)
             return obj->intersect(r, i);
         else

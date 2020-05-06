@@ -31,8 +31,6 @@ public:
 
     bool loadScene(const char *fn);
 
-    bool sceneLoaded() { return scene != nullptr; }
-
     void traceSetup(int w, int h);
 
     virtual void traceImage(int w, int h) = 0;

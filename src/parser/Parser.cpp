@@ -5,9 +5,19 @@
 
 #include "Parser.h"
 #include "../scene/scene.h"
+#include "../scene/sphere.h"
+#include "../scene/trimesh.h"
 #include <glm/gtx/transform.hpp>
 
-using namespace std;
+// Texture cache
+std::map<std::string, TextureMap *> textureCache;
+
+static TextureMap *getTexture(string name) {
+    auto itr = textureCache.find(name);
+    if (itr == textureCache.end())
+        return textureCache[name] = new TextureMap(name);
+    return itr->second;
+}
 
 Scene *Parser::parseScene() {
     _tokenizer.Read(SBT_RAYTRACER);
@@ -15,7 +25,7 @@ Scene *Parser::parseScene() {
     unique_ptr<Token> versionNumber(_tokenizer.Read(SCALAR));
 
     if (versionNumber->value() > 1.1) {
-        ostringstream ost;
+        std::ostringstream ost;
         ost << "SBT-raytracer version number " << versionNumber->value() <<
             " too high; only able to parse v1.1 and below.";
         throw ParserException(ost.str());
@@ -23,6 +33,7 @@ Scene *Parser::parseScene() {
 
     auto scene = new Scene;
     Material mat;
+    TransformRoot transformRoot;
 
     for (;;) {
         const Token *t = _tokenizer.Peek();
@@ -39,7 +50,7 @@ Scene *Parser::parseScene() {
             case SCALE:
             case TRANSFORM:
             case LBRACE:
-                parseTransformableElement(scene, &scene->transformRoot, mat);
+                parseTransformableElement(scene, &transformRoot, mat);
                 break;
             case POINT_LIGHT:
                 parsePointLight(scene);
@@ -330,11 +341,12 @@ void Parser::parseSphere(Scene *scene, TransformNode *transform, const Material 
                 break;
             case RBRACE:
                 _tokenizer.Read(RBRACE);
-                scene->add(new Sphere(newMat, transform));
+                scene->add(new Sphere(newMat,
+                                      transform->localToGlobalCoords(glm::dvec4(0, 0, 0, 1)),
+                                      transform->localToGlobalCoords(glm::dvec4(1, 0, 0, 0)).x));
                 return;
             default:
                 throw SyntaxErrorException("Expected: sphere attributes", _tokenizer);
-
         }
     }
 }
@@ -357,7 +369,7 @@ void Parser::parseBox(Scene *scene, TransformNode *transform, const Material &ma
                 break;
             case RBRACE:
                 _tokenizer.Read(RBRACE);
-                scene->add(Trimesh::fromBox(transform, newMat));
+                scene->add(Trimesh::fromBox(newMat, transform)->getFaces());
                 return;
             default:
                 throw SyntaxErrorException("Expected: box attributes", _tokenizer);
@@ -383,7 +395,7 @@ void Parser::parseSquare(Scene *scene, TransformNode *transform, const Material 
                 break;
             case RBRACE:
                 _tokenizer.Read(RBRACE);
-                scene->add(Trimesh::fromSquare(newMat, transform));
+                scene->add(Trimesh::fromSquare(newMat, transform)->getFaces());
                 return;
             default:
                 throw SyntaxErrorException("Expected: square attributes", _tokenizer);
@@ -449,7 +461,7 @@ void Parser::parseTrimesh(Scene *scene, TransformNode *transform, const Material
     _tokenizer.Read(LBRACE);
 
     bool generateNormals(false);
-    list<glm::dvec3> faces;
+    std::list<glm::dvec3> faces;
 
     const char *error;
     for (;;) {
@@ -548,9 +560,9 @@ void Parser::parseTrimesh(Scene *scene, TransformNode *transform, const Material
 
                 // Now add all the faces into the trimesh, since hopefully
                 // the vertices have been parsed out
-                for (const auto & face : faces) {
+                for (const auto &face : faces) {
                     if (!mesh->addFace(face[0], face[1], face[2])) {
-                        ostringstream oss;
+                        std::ostringstream oss;
                         oss << "Bad face in trimesh: (" << face[0] << ", " << face[1] <<
                             ", " << face[2] << ")";
                         throw ParserException(oss.str());
@@ -563,7 +575,7 @@ void Parser::parseTrimesh(Scene *scene, TransformNode *transform, const Material
                 if ((error = mesh->doubleCheck()))
                     throw ParserException(error);
 
-                scene->add(mesh);
+                scene->add(mesh->getFaces());
                 return;
             }
 
@@ -573,15 +585,15 @@ void Parser::parseTrimesh(Scene *scene, TransformNode *transform, const Material
     }
 }
 
-void Parser::parseFaces(list<glm::dvec3> &faces) {
-    list<double> points = parseScalarList();
+void Parser::parseFaces(std::list<glm::dvec3> &faces) {
+    std::list<double> points = parseScalarList();
 
     // triangulate here and now.  assume the poly is
     // concave (convex?) and we can triangulate using an arbitrary fan
     if (points.size() < 3)
         throw SyntaxErrorException("Faces must have at least 3 vertices.", _tokenizer);
 
-    list<double>::const_iterator i = points.begin();
+    std::list<double>::const_iterator i = points.begin();
     double a = (*i++);
     double b = (*i++);
     while (i != points.end()) {
@@ -601,19 +613,13 @@ void Parser::parseAmbientLight(Scene *scene) {
     if (_tokenizer.Peek()->kind() != COLOR)
         throw SyntaxErrorException("Expected color attribute", _tokenizer);
 
-    scene->addAmbient(parseVec3dExpression());
+    parseVec3dExpression();
     _tokenizer.Read(RBRACE);
-    return;
 }
 
 void Parser::parsePointLight(Scene *scene) {
     glm::dvec3 position;
     glm::dvec3 color;
-
-    // Default to the 'default' system
-    float constantAttenuationCoefficient = 0.0f;
-    float linearAttenuationCoefficient = 0.0f;
-    float quadraticAttenuationCoefficient = 1.0f;
 
     bool hasPosition(false), hasColor(false);
 
@@ -638,26 +644,22 @@ void Parser::parsePointLight(Scene *scene) {
                 break;
 
             case CONSTANT_ATTENUATION_COEFF:
-                constantAttenuationCoefficient = parseScalarExpression();
-                break;
-
             case LINEAR_ATTENUATION_COEFF:
-                linearAttenuationCoefficient = parseScalarExpression();
-                break;
-
             case QUADRATIC_ATTENUATION_COEFF:
-                quadraticAttenuationCoefficient = parseScalarExpression();
+                parseScalarExpression();
                 break;
 
-            case RBRACE:
+            case RBRACE: {
                 if (!hasColor)
                     throw SyntaxErrorException("Expected: 'color'", _tokenizer);
                 if (!hasPosition)
                     throw SyntaxErrorException("Expected: 'position'", _tokenizer);
                 _tokenizer.Read(RBRACE);
-                scene->add(new Sphere(Material(color, glm::dvec3(), glm::dvec3(), glm::dvec3(), glm::dvec3(), glm::dvec3(1), 0, 0),
-                        position, 1));
+                auto m = Material(color, glm::dvec3(), glm::dvec3(), glm::dvec3(1), 1);
+                auto s = new Sphere(m, position, 1);
+                scene->add(s);
                 return;
+            }
             default:
                 throw SyntaxErrorException(
                         "expecting 'position' or 'color' attribute, or 'constant_attenuation_coeff', 'linear_attenuation_coeff', or 'quadratic_attenuation_coeff'",
@@ -750,8 +752,8 @@ string Parser::parseIdent() {
 }
 
 
-list<double> Parser::parseScalarList() {
-    list<double> ret;
+std::list<double> Parser::parseScalarList() {
+    std::list<double> ret;
 
     _tokenizer.Read(LPAREN);
     if (RPAREN != _tokenizer.Peek()->kind()) {
@@ -865,7 +867,7 @@ Material Parser::parseMaterial(Scene *scene, const Material &parent) {
                     if (materials.find(name) == materials.end())
                         materials[name] = mat;
                     else {
-                        ostringstream oss;
+                        std::ostringstream oss;
                         oss << "Redefinition of material '" << name << "'.";
                         throw SyntaxErrorException(oss.str(), _tokenizer);
                     }
@@ -887,7 +889,7 @@ MaterialParameter Parser::parseVec3dMaterialParameter(Scene *scene) {
         filename.append(parseIdent());
         _tokenizer.Read(RPAREN);
         _tokenizer.CondRead(SEMICOLON);
-        return MaterialParameter(scene->getTexture(filename));
+        return MaterialParameter(getTexture(filename));
     } else {
         glm::dvec3 value(parseVec3d());
         _tokenizer.CondRead(SEMICOLON);
@@ -903,7 +905,7 @@ MaterialParameter Parser::parseScalarMaterialParameter(Scene *scene) {
         string filename = parseIdent();
         _tokenizer.Read(RPAREN);
         _tokenizer.CondRead(SEMICOLON);
-        return MaterialParameter(scene->getTexture(filename));
+        return MaterialParameter(getTexture(filename));
     } else {
         double value = parseScalar();
         _tokenizer.CondRead(SEMICOLON);

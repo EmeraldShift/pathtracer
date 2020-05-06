@@ -12,15 +12,16 @@
 class CommandLineUI : public TraceUI {
 
 public:
-	CommandLineUI( int argc, char** argv );
-	int		run();
+    CommandLineUI(int argc, char **argv);
+
+    int run();
 
 private:
-	void		usage();
+    void usage();
 
-	char*	rayName;
-	char*	imgName;
-	char*	progName;
+    char *rayName;
+    char *imgName;
+    char *progName;
 };
 
 #endif

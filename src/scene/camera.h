@@ -9,25 +9,25 @@
 class Camera
 {
 public:
-    Camera();
-    void rayThrough( double x, double y, ray &r ) const;
-    void setEye( const glm::dvec3 &eye );
-    void setLook( double, double, double, double );
-    void setLook( const glm::dvec3 &viewDir, const glm::dvec3 &upDir );
-    void setFOV( double );
-    void setAspectRatio( double );
-    double getAspectRatio() const { return aspectRatio; }
+    CUDA_CALLABLE_MEMBER Camera() = default;
+    CUDA_CALLABLE_MEMBER void rayThrough( double x, double y, ray &r ) const;
+    CUDA_CALLABLE_MEMBER void setEye( const glm::dvec3 &eye );
+    CUDA_CALLABLE_MEMBER void setLook( double, double, double, double );
+    CUDA_CALLABLE_MEMBER void setLook( const glm::dvec3 &viewDir, const glm::dvec3 &upDir );
+    CUDA_CALLABLE_MEMBER void setFOV( double );
+    CUDA_CALLABLE_MEMBER void setAspectRatio( double );
+    CUDA_CALLABLE_MEMBER double getAspectRatio() const { return aspectRatio; }
 
 private:
-    glm::dmat3 m;                     // rotation matrix
-    double normalizedHeight;    // dimensions of image place at unit dist from eye
-    double aspectRatio;
-    
-    void update();              // using the above three values calculate look,u,v
-    
-    glm::dvec3 eye;
-    glm::dvec3 look;                  // direction to look
-    glm::dvec3 u,v;                   // u and v in the 
+    CUDA_CALLABLE_MEMBER void update();
+
+    double normalizedHeight = 1;
+    double aspectRatio = 1;
+    glm::dmat3 m = glm::dmat3x3(1);
+    glm::dvec3 eye = glm::dvec3(0, 0, 0);
+    glm::dvec3 u = glm::dvec3(1,0, 0);
+    glm::dvec3 v = glm::dvec3(0, 1, 0);
+    glm::dvec3 look = glm::dvec3(0, 1, -1);
 };
 
 #endif
