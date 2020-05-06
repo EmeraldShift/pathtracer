@@ -460,7 +460,6 @@ void Parser::parseTrimesh(Scene *scene, TransformNode *transform, const Material
     _tokenizer.Read(TRIMESH);
     _tokenizer.Read(LBRACE);
 
-    bool generateNormals(false);
     std::list<glm::dvec3> faces;
 
     const char *error;
@@ -471,7 +470,6 @@ void Parser::parseTrimesh(Scene *scene, TransformNode *transform, const Material
             case GENNORMALS:
                 _tokenizer.Read(GENNORMALS);
                 _tokenizer.Read(SEMICOLON);
-                generateNormals = true;
                 break;
 
             case MATERIAL:
@@ -505,13 +503,13 @@ void Parser::parseTrimesh(Scene *scene, TransformNode *transform, const Material
                 _tokenizer.Read(EQUALS);
                 _tokenizer.Read(LPAREN);
                 if (RPAREN != _tokenizer.Peek()->kind()) {
-                    mesh->addNormal(transform->localToGlobalCoordsNormal(parseVec3d()));
+                    parseVec3d();
                     for (;;) {
                         const Token *nextToken = _tokenizer.Peek();
                         if (RPAREN == nextToken->kind())
                             break;
                         _tokenizer.Read(COMMA);
-                        mesh->addNormal(transform->localToGlobalCoordsNormal(parseVec3d()));
+                        parseVec3d();
                     }
                 }
                 _tokenizer.Read(RPAREN);
@@ -568,9 +566,6 @@ void Parser::parseTrimesh(Scene *scene, TransformNode *transform, const Material
                         throw ParserException(oss.str());
                     }
                 }
-
-                if (generateNormals)
-                    mesh->generateNormals();
 
                 if ((error = mesh->doubleCheck()))
                     throw ParserException(error);

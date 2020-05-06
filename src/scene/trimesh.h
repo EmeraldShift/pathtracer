@@ -47,15 +47,11 @@ public:
 
     void addMaterial(const Material &m);
 
-    void addNormal(const glm::dvec3 &);
-
     bool addFace(int a, int b, int c);
 
     std::vector<TrimeshFace *> getFaces() { return faces; };
 
     const char *doubleCheck();
-
-    void generateNormals();
 
     static Trimesh *fromBox(Material &mat, TransformNode *transform);
 
@@ -70,7 +66,6 @@ private:
 
     Material mat;
     std::vector<glm::dvec3> vertices;
-    std::vector<glm::dvec3> normals;
     std::vector<TrimeshFace *> faces;
     std::vector<Material> materials;
 };
