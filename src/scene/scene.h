@@ -52,10 +52,14 @@ public:
         bvh.construct(objects);
     }
 
-    Camera &getCamera() { return camera; }
+    CUDA_CALLABLE_MEMBER Camera &getCamera() { return camera; }
 
     bool intersect(ray &r, isect &i) {
         return bvh.traverse(r, i);
+    }
+
+    CUDA_CALLABLE_MEMBER bool intersectIterative(ray &r, isect &i) {
+        return bvh.traverseIterative(r, i);
     }
 
 private:

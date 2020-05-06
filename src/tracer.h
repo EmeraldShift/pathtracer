@@ -50,7 +50,6 @@ protected:
 
     std::vector<unsigned char> buffer;
     int buffer_width, buffer_height;
-    int bufferSize;
 };
 
 class CpuTracer : public Tracer {

@@ -1,4 +1,4 @@
-FIND_PACKAGE(glm 0.9.9.0 QUIET)
+FIND_PACKAGE(glm 0.9.9.1 QUIET)
 IF (${glm_FOUND})
 	INCLUDE_DIRECTORIES(${glm_INCLUDE_DIR})
 	message(STATUS "Using System glm")

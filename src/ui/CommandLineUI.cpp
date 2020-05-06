@@ -78,31 +78,17 @@ int CommandLineUI::run()
 	assert(raytracer != nullptr);
 	if (raytracer->loadScene(rayName)) {
 		int width = m_nSize;
-		int height = std::round(width / raytracer->aspectRatio() + 0.5);
-
-		raytracer->traceSetup(width, height);
-
-		clock_t start, end;
-		start = clock();
+		int height = (int)std::round(width / raytracer->aspectRatio() + 0.5);
 
 		raytracer->traceSetup(width, height);
 		raytracer->traceImage(width, height);
 		raytracer->waitRender();
 
-		end = clock();
-
 		// save image
 		unsigned char* buf;
-
 		raytracer->getBuffer(buf, width, height);
-
 		if (buf)
 			writeImage(imgName, width, height, buf);
-
-		double t = (double)(end - start) / CLOCKS_PER_SEC;
-		//		int totalRays = TraceUI::resetCount();
-		//		std::cout << "total time = " << t << " seconds,
-		// rays traced = " << totalRays << std::endl;
 		return 0;
 	} else {
 		std::cerr << "Unable to load ray file '" << rayName << "'"

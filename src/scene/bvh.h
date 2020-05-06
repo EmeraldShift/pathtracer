@@ -71,7 +71,7 @@ static double area(BoundingBox &bb) {
 }
 
 static double sah(int n_l, double s_l, int n_r, double s_r, double s_p) {
-    return 1 + n_l * (s_l / s_p) + n_r * (s_r / s_p);
+    return 1 + 3.0 * (n_l * (s_l / s_p) + n_r * (s_r / s_p));
 }
 
 /**
@@ -101,8 +101,12 @@ static Cluster<Obj> *genCluster(std::vector<Obj> &xvec,
     auto bestAxis = -1;
     auto bestSplit = -1;
     auto size = xvec.size();
-    auto bestCost = size;
+    auto bestCost = 3.0 * size;
     double *leftArea = new double[size];
+    auto allBounds = BoundingBox();
+    for (int i = 0; i < size; i++)
+        allBounds.merge(xvec[i]->getBoundingBox());
+
     std::vector<Obj> vecs[] = {xvec, yvec, zvec};
     for (int axis = 0; axis < 3; axis++) {
         BoundingBox bb;
@@ -116,7 +120,7 @@ static Cluster<Obj> *genCluster(std::vector<Obj> &xvec,
         bb = BoundingBox();
         for (int i = size - 1; i > 0; i--) {
             bb.merge(xvec[i]->getBoundingBox());
-            double cost = sah(i, leftArea[i - 1], size - i, area(bb), leftArea[size]);
+            double cost = sah(i, leftArea[i - 1], size - i, area(bb), leftArea[size - 1]);
             if (cost < bestCost) {
                 bestCost = cost;
                 bestAxis = axis;
@@ -128,7 +132,6 @@ static Cluster<Obj> *genCluster(std::vector<Obj> &xvec,
 
     // Defaults if no split better than leaf
     if (bestAxis == -1) {
-        // Find max spreads
         auto xspread = spread<Obj, spreadFunction, 0>(xvec);
         auto yspread = spread<Obj, spreadFunction, 1>(yvec);
         auto zspread = spread<Obj, spreadFunction, 2>(zvec);
@@ -143,26 +146,24 @@ static Cluster<Obj> *genCluster(std::vector<Obj> &xvec,
         bestAxis = splitset;
         bestSplit = size / 2;
     }
-
-    auto &splitset = vecs[bestAxis];
-    std::vector<Obj> xleft, yleft, zleft, xright, yright, zright;
-    for (size_t i = 0; i < bestSplit; i++) {
-        auto f = splitset[i];
-        xleft.push_back(f);
-        yleft.push_back(f);
-        zleft.push_back(f);
-    }
-    for (size_t i = bestSplit; i < size; i++) {
-        auto f = splitset[i];
-        xright.push_back(f);
-        yright.push_back(f);
-        zright.push_back(f);
-    }
-
-    c->left = genCluster<Obj, spreadFunction>(xleft, yleft, zleft);
-    c->right = genCluster<Obj, spreadFunction>(xright, yright, zright);
-    c->bbox = BoundingBox(glm::min(c->left->bbox.getMin(), c->right->bbox.getMin()),
-                          glm::max(c->left->bbox.getMax(), c->right->bbox.getMax()));
+        auto &splitset = vecs[bestAxis];
+        std::vector<Obj> xleft, yleft, zleft, xright, yright, zright;
+        for (size_t i = 0; i < bestSplit; i++) {
+            auto f = splitset[i];
+            xleft.push_back(f);
+            yleft.push_back(f);
+            zleft.push_back(f);
+        }
+        for (size_t i = bestSplit; i < size; i++) {
+            auto f = splitset[i];
+            xright.push_back(f);
+            yright.push_back(f);
+            zright.push_back(f);
+        }
+        c->left = genCluster<Obj, spreadFunction>(xleft, yleft, zleft);
+        c->right = genCluster<Obj, spreadFunction>(xright, yright, zright);
+        c->bbox = BoundingBox(glm::min(c->left->bbox.getMin(), c->right->bbox.getMin()),
+                              glm::max(c->left->bbox.getMax(), c->right->bbox.getMax()));
     return c;
 }
 
@@ -208,5 +209,37 @@ public:
 
     bool traverse(ray &r, isect &i) const {
         return root == nullptr ? false : root->intersect(r, i);
+    }
+
+    bool traverseIterative(ray &r, isect &i) const {
+        if (root == nullptr)
+            return false;
+        if (root->obj)
+            return root->obj->intersect(r, i);
+
+        bool have_one = false;
+        Cluster<Obj> *stack[64];
+        Cluster<Obj> **sp = stack;
+        *sp++ = nullptr;
+        Cluster<Obj> *current = root;
+        while (current) {
+            bool overlapL = current->left->bbox.intersect(r, i.getT());
+            bool overlapR = current->right->bbox.intersect(r, i.getT());
+            if (overlapL && current->left->obj)
+                have_one |= current->left->obj->intersect(r, i);
+            if (overlapR && current->right->obj)
+                have_one |= current->right->obj->intersect(r, i);
+
+            bool traverseL = (overlapL && !current->left->obj);
+            bool traverseR = (overlapR && !current->right->obj);
+            if (!traverseL && !traverseR) {
+                current = *--sp;
+            } else {
+                if (traverseL && traverseR)
+                    *sp++ = current->right;
+                current = traverseL ? current->left : current->right;
+            }
+        }
+        return have_one;
     }
 };

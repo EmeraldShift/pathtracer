@@ -82,11 +82,8 @@ bool Tracer::loadScene(const char *fn) {
 }
 
 void Tracer::traceSetup(int w, int h) {
-    size_t newBufferSize = w * h * 3;
-    if (newBufferSize != buffer.size()) {
-        bufferSize = newBufferSize;
-        buffer.resize(bufferSize);
-    }
+    auto size = w * h * 3;
+    buffer.resize(size);
     buffer_width = w;
     buffer_height = h;
     std::fill(buffer.begin(), buffer.end(), 0);
