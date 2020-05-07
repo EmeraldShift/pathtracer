@@ -9,30 +9,18 @@ UNSET(src)
 #ENDIF()
  
 find_package(CUDA QUIET REQUIRED)
-# By default, source files are added automatically
-IF (NOT src)
-	AUX_SOURCE_DIRECTORY(${pwd} src)
-	AUX_SOURCE_DIRECTORY(${pwd}/fileio src)
-	AUX_SOURCE_DIRECTORY(${pwd}/parser src)
-	AUX_SOURCE_DIRECTORY(${pwd}/scene src)
-	AUX_SOURCE_DIRECTORY(${pwd}/SceneObjects src)
-	AUX_SOURCE_DIRECTORY(${pwd}/ui src)
-	IF (WIN32)
-		AUX_SOURCE_DIRECTORY(${pwd}/gpu src)
-		AUX_SOURCE_DIRECTORY(${pwd}/win32 src)
-	ENDIF (WIN32)
-ENDIF(NOT src)
+set(CUDA_SEPARABLE_COMPILATION ON)
+file(GLOB_RECURSE src
+		"*.h"
+		"*.cu")
 
-IF (WIN32)
-	cuda_add_executable(ray ${src})
-ELSE ()
-	file(GLOB CUDA_FILES "gpu/*.cu" "gpu/*.h")
-	cuda_add_executable(ray ${src} ${CUDA_FILES})
-ENDIF (WIN32)
+cuda_add_executable(ray ${src})
 
 message(STATUS "ray added, files ${src}")
 
 target_link_libraries(ray ${OPENGL_gl_LIBRARY})
+
+
 #SET(FLTK_SKIP_FLUID TRUE)
 #FIND_PACKAGE(FLTK REQUIRED)
 #SET_PROPERTY(TARGET ray APPEND PROPERTY INCLUDE_DIRECTORIES ${FLTK_INCLUDE_DIR})

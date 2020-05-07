@@ -32,7 +32,7 @@ using std::string;
  */
 class TextureMap {
 public:
-    explicit TextureMap(const string& filename);
+    explicit TextureMap(const string &filename);
 
     // Return the mapped value; here the coordinate
     // is assumed to be within the parametrization space:
@@ -78,76 +78,18 @@ private:
  * (somewhat) justifiable to do this.
  */
 
-class MaterialParameter {
-public:
-    explicit MaterialParameter(const glm::dvec3 &par)
-            : _value(par) {
-    }
-
-    explicit MaterialParameter(const double par)
-            : _value(par, par, par) {
-    }
-
-    explicit MaterialParameter(TextureMap *tex)
-            : _textureMap(tex) {
-    }
-
-    MaterialParameter() = default;
-
-    MaterialParameter &operator*=(const MaterialParameter &rhs) {
-        (*this) *= rhs._value;
-        return *this;
-    }
-
-    glm::dvec3 &operator*=(const glm::dvec3 &rhs) {
-        _value += rhs;
-//        _value[0] *= rhs[0];
-//        _value[1] *= rhs[1];
-//        _value[2] *= rhs[2];
-        return _value;
-    }
-
-    glm::dvec3 &operator*=(const double rhs) {
-        _value[0] *= rhs;
-        _value[1] *= rhs;
-        _value[2] *= rhs;
-        return _value;
-    }
-
-    MaterialParameter &operator+=(const MaterialParameter &rhs) {
-        _value += rhs._value;
-        return *this;
-    }
-
-    glm::dvec3 &operator+=(const glm::dvec3 &rhs) {
-        _value += rhs;
-        return _value;
-    }
-
-    glm::dvec3 value(const isect &is) const;
-
-    double intensityValue(const isect &is) const;
-
-    // Use this to determine if the particular parameter is
-    // mapped; use this to determine if we need to somehow renormalize.
-    bool mapped() const { return _textureMap != nullptr; }
-
-private:
-    glm::dvec3 _value = glm::dvec3(0);
-    TextureMap *_textureMap = nullptr;
-};
-
 class Material {
 
 public:
     Material() = default;
 
-    virtual ~Material() = default;
+    ~Material() = default;
 
     Material(const glm::dvec3 &e, const glm::dvec3 &d,
              const glm::dvec3 &r, const glm::dvec3 &t, double in)
             : _ke(e), _kd(d), _kr(r), _kt(t), _index(glm::dvec3(in, in, in)) {}
 
+    CUDA_CALLABLE_MEMBER
     Material &
     operator+=(const Material &m) {
         _ke += m._ke;
@@ -158,46 +100,42 @@ public:
         return *this;
     }
 
-    friend Material operator*(double d, Material m);
+    CUDA_CALLABLE_MEMBER friend Material operator*(double d, Material m);
 
     // Accessor functions; we pass in an isect& for cases where
     // the parameter is dependent on, for example, world-space
     // coordinates (i.e., solid textures) or parametrized coordinates
     // (i.e., mapped textures)
-    glm::dvec3 ke(const isect &i) const { return _ke.value(i); }
+    CUDA_CALLABLE_MEMBER glm::dvec3 ke(const isect &i) const { return _ke; }
 
-    glm::dvec3 kd(const isect &i) const { return _kd.value(i); }
+    CUDA_CALLABLE_MEMBER glm::dvec3 kd(const isect &i) const { return _kd; }
 
-    glm::dvec3 kr(const isect &i) const { return _kr.value(i); }
+    CUDA_CALLABLE_MEMBER glm::dvec3 kr(const isect &i) const { return _kr; }
 
-    glm::dvec3 kt(const isect &i) const { return _kt.value(i); }
+    CUDA_CALLABLE_MEMBER glm::dvec3 kt(const isect &i) const { return _kt; }
 
-    double index(const isect &i) const { return _index.intensityValue(i); }
+    CUDA_CALLABLE_MEMBER double index(const isect &i) const { return _index[0]; }
 
-    // setting functions taking MaterialParameters
-    void setEmissive(const MaterialParameter &ke) { _ke = ke; }
+    void setEmissive(const glm::dvec3 &ke) { _ke = ke; }
 
-    void setDiffuse(const MaterialParameter &kd) { _kd = kd; }
+    void setDiffuse(const glm::dvec3 &kd) { _kd = kd; }
 
-    void setReflective(const MaterialParameter &kr) {
-        _kr = kr;
-    }
+    void setReflective(const glm::dvec3 &kr) { _kr = kr; }
 
-    void setTransmissive(const MaterialParameter &kt) {
-        _kt = kt;
-    }
+    void setTransmissive(const glm::dvec3 &kt) { _kt = kt; }
 
-    void setIndex(const MaterialParameter &index) { _index = index; }
+    void setIndex(const glm::dvec3 &index) { _index = index; }
 
 private:
-    MaterialParameter _ke = MaterialParameter(glm::dvec3(0));
-    MaterialParameter _kd = MaterialParameter(glm::dvec3(0));
-    MaterialParameter _kr = MaterialParameter(glm::dvec3(0));
-    MaterialParameter _kt = MaterialParameter(glm::dvec3(0));
-    MaterialParameter _index = MaterialParameter(1.0);
+    glm::dvec3 _ke = glm::dvec3(0);
+    glm::dvec3 _kd = glm::dvec3(0);
+    glm::dvec3 _kr = glm::dvec3(0);
+    glm::dvec3 _kt = glm::dvec3(0);
+    glm::dvec3 _index = glm::dvec3(1.0);
 };
 
 // This doesn't necessarily make sense for mapped materials
+CUDA_CALLABLE_MEMBER
 inline Material
 operator*(double d, Material m) {
     m._ke *= d;

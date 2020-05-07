@@ -201,7 +201,7 @@ void Parser::parseGeometry(Scene *scene, TransformNode *transform, const Materia
             parseSquare(scene, transform, mat);
             return;
         case CYLINDER:
-            parseCylinder();
+            parseCylinder(scene);
             return;
         case CONE:
             parseCone(scene, mat);
@@ -403,13 +403,14 @@ void Parser::parseSquare(Scene *scene, TransformNode *transform, const Material 
     }
 }
 
-void Parser::parseCylinder() {
+void Parser::parseCylinder(Scene *scene) {
     _tokenizer.Read(CYLINDER);
     _tokenizer.Read(LBRACE);
     for (;;) {
         const Token *t = _tokenizer.Peek();
         switch (t->kind()) {
             case MATERIAL:
+                parseMaterialExpression(scene, Material());
                 break;
             case NAME:
                 parseIdentExpression();
@@ -874,7 +875,7 @@ Material Parser::parseMaterial(Scene *scene, const Material &parent) {
     }
 }
 
-MaterialParameter Parser::parseVec3dMaterialParameter(Scene *scene) {
+glm::dvec3 Parser::parseVec3dMaterialParameter(Scene *scene) {
     _tokenizer.Get();
     _tokenizer.Read(EQUALS);
     if (_tokenizer.CondRead(MAP)) {
@@ -884,15 +885,15 @@ MaterialParameter Parser::parseVec3dMaterialParameter(Scene *scene) {
         filename.append(parseIdent());
         _tokenizer.Read(RPAREN);
         _tokenizer.CondRead(SEMICOLON);
-        return MaterialParameter(getTexture(filename));
+        return glm::dvec3(1.0, 0.0, 1.0);
     } else {
         glm::dvec3 value(parseVec3d());
         _tokenizer.CondRead(SEMICOLON);
-        return MaterialParameter(value);
+        return value;
     }
 }
 
-MaterialParameter Parser::parseScalarMaterialParameter(Scene *scene) {
+glm::dvec3 Parser::parseScalarMaterialParameter(Scene *scene) {
     _tokenizer.Get();
     _tokenizer.Read(EQUALS);
     if (_tokenizer.CondRead(MAP)) {
@@ -900,10 +901,10 @@ MaterialParameter Parser::parseScalarMaterialParameter(Scene *scene) {
         string filename = parseIdent();
         _tokenizer.Read(RPAREN);
         _tokenizer.CondRead(SEMICOLON);
-        return MaterialParameter(getTexture(filename));
+        return glm::dvec3(1.0, 1.0, 1.0);
     } else {
         double value = parseScalar();
         _tokenizer.CondRead(SEMICOLON);
-        return MaterialParameter(value);
+        return glm::dvec3(value, value, value);
     }
 }

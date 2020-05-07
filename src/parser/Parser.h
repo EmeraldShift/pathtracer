@@ -70,7 +70,7 @@ private:
 
     void parseSquare(Scene *scene, TransformNode *transform, const Material &mat);
 
-    void parseCylinder();
+    void parseCylinder(Scene *scene);
 
     void parseCone(Scene *scene, const Material &mat);
 
@@ -101,10 +101,9 @@ private:
 
     string parseIdentExpression();
 
-    MaterialParameter parseVec3dMaterialParameter(Scene *scene);
+    glm::dvec3 parseVec3dMaterialParameter(Scene *scene);
 
-    MaterialParameter parseScalarMaterialParameter(Scene *scene);
-
+    glm::dvec3 parseScalarMaterialParameter(Scene *scene);
 
     // Helper functions for parsing things like vectors
     // and idents.

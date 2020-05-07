@@ -9,17 +9,17 @@
 class Camera
 {
 public:
-    CUDA_CALLABLE_MEMBER Camera() = default;
+    Camera() = default;
     CUDA_CALLABLE_MEMBER void rayThrough( double x, double y, ray &r ) const;
-    CUDA_CALLABLE_MEMBER void setEye( const glm::dvec3 &eye );
-    CUDA_CALLABLE_MEMBER void setLook( double, double, double, double );
-    CUDA_CALLABLE_MEMBER void setLook( const glm::dvec3 &viewDir, const glm::dvec3 &upDir );
-    CUDA_CALLABLE_MEMBER void setFOV( double );
-    CUDA_CALLABLE_MEMBER void setAspectRatio( double );
-    CUDA_CALLABLE_MEMBER double getAspectRatio() const { return aspectRatio; }
+    void setEye( const glm::dvec3 &eye );
+    void setLook( double, double, double, double );
+    void setLook( const glm::dvec3 &viewDir, const glm::dvec3 &upDir );
+    void setFOV( double );
+    void setAspectRatio( double );
+    double getAspectRatio() const { return aspectRatio; }
 
 private:
-    CUDA_CALLABLE_MEMBER void update();
+    void update();
 
     double normalizedHeight = 1;
     double aspectRatio = 1;

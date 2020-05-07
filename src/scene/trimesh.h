@@ -3,17 +3,16 @@
 #include "geometry.h"
 #include "material.h"
 #include "transform.h"
-#include "../gpu/cuda.h"
 
 class Trimesh;
 
 class TrimeshFace : public Geometry {
 public:
-    int operator[](int i) const { return ids[i]; }
+    glm::dvec3 getNormal() { return normal; }
 
-    CUDA_CALLABLE_MEMBER glm::dvec3 getNormal() { return normal; }
+    CUDA_CALLABLE_MEMBER static bool intersect(void *obj, ray &r, isect &i);
 
-    CUDA_CALLABLE_MEMBER bool intersect(ray &r, isect &i) const override;
+    TrimeshFace *clone() const override;
 
     static TrimeshFace *create(const Material &mat, Trimesh *parent, int a, int b, int c);
 
@@ -22,13 +21,17 @@ private:
 
     BoundingBox computeLocalBoundingBox();
 
-    Material mat;
-    Trimesh *parent = nullptr;
-    int ids[3] = {-1, -1, -1};
+    glm::dvec3 vertices[3];
+    glm::dvec3 v0 = glm::dvec3();
+    glm::dvec3 v1 = glm::dvec3();
+    glm::dvec3 v2 = glm::dvec3();
     glm::dvec3 normal = glm::dvec3();
     glm::dvec3 uInv = glm::dvec3();
     glm::dvec3 vInv = glm::dvec3();
     glm::dvec3 nInv = glm::dvec3();
+
+    bool hasMaterials = false;
+    Material materials[3];
 };
 
 class Trimesh {

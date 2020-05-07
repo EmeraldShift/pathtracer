@@ -12,6 +12,7 @@ class MaterialObject;
 // I don't know if even an inline function can be called frmo CUDA, so
 // this is just to be extra safe
 #define invert(dd) glm::dvec3(1.0 / dd[0], 1.0 / dd[1], 1.0 / dd[2])
+#define RAY_EPSILON 0.00000001
 
 constexpr double ISECT_NO_HIT = 12345678.9;
 
@@ -52,9 +53,13 @@ private:
 
 class ray {
 public:
-    CUDA_CALLABLE_MEMBER ray(const glm::dvec3 &pos, const glm::dvec3 &dir)
-            : pos(pos), dir(dir), invdir(invert(dir)) {
+    CUDA_CALLABLE_MEMBER ray(const glm::dvec3 &p, const glm::dvec3 &d) {
+        pos = p;
+        dir = d;
+        invdir = invert(dir);
     };
+
+    CUDA_CALLABLE_MEMBER ray() = default;
 
     CUDA_CALLABLE_MEMBER ray(const ray &other) = default;
 
@@ -80,9 +85,7 @@ public:
     }
 
 private:
-    glm::dvec3 pos;
-    glm::dvec3 dir;
-    glm::dvec3 invdir;
+    glm::dvec3 pos = glm::dvec3();
+    glm::dvec3 dir = glm::dvec3();
+    glm::dvec3 invdir = glm::dvec3();
 };
-
-const double RAY_EPSILON = 0.00000001;

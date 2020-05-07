@@ -1,6 +1,7 @@
 #include "trimesh.h"
 
 #include <cmath>
+#include <iostream>
 
 TrimeshFace *TrimeshFace::create(const Material &mat, Trimesh *parent, int a, int b, int c) {
     // Compute the face normal here, not on the fly
@@ -20,30 +21,30 @@ TrimeshFace *TrimeshFace::create(const Material &mat, Trimesh *parent, int a, in
     auto face = new TrimeshFace();
     auto normal = glm::normalize(glm::cross(vab, vac));
     auto inverse = glm::inverse(glm::dmat3(vab, vac, normal));
-    face->mat = mat;
-    face->parent = parent;
-    face->ids[0] = a;
-    face->ids[1] = b;
-    face->ids[2] = c;
+    face->materials[0] = mat;
+    face->vertices[0] = a_coords;
+    face->vertices[1] = b_coords;
+    face->vertices[2] = c_coords;
     face->normal = normal;
     face->uInv = glm::dvec3(inverse[0][0], inverse[1][0], inverse[2][0]);
     face->vInv = glm::dvec3(inverse[0][1], inverse[1][1], inverse[2][1]);
     face->nInv = glm::dvec3(inverse[0][2], inverse[1][2], inverse[2][2]);
     face->bounds = face->computeLocalBoundingBox();
+    if (!parent->materials.empty()) {
+        face->hasMaterials = true;
+        face->materials[0] = parent->materials[a];
+        face->materials[1] = parent->materials[b];
+        face->materials[2] = parent->materials[c];
+    }
     return face;
 }
 
 BoundingBox TrimeshFace::computeLocalBoundingBox() {
     BoundingBox bb;
-    bb.setMax(glm::max(parent->vertices[ids[0]],
-                       parent->vertices[ids[1]]));
-    bb.setMin(glm::min(parent->vertices[ids[0]],
-                       parent->vertices[ids[1]]));
-
-    bb.setMax(glm::max(parent->vertices[ids[2]],
-                       bb.getMax()));
-    bb.setMin(glm::min(parent->vertices[ids[2]],
-                       bb.getMin()));
+    bb.setMax(glm::max(vertices[0], vertices[1]));
+    bb.setMin(glm::min(vertices[0], vertices[1]));
+    bb.setMax(glm::max(bb.getMax(), vertices[2]));
+    bb.setMin(glm::min(bb.getMin(), vertices[2]));
     return bb;
 }
 
@@ -84,11 +85,14 @@ const char *Trimesh::doubleCheck() {
     return nullptr;
 }
 
-bool TrimeshFace::intersect(ray &r, isect &i) const {
-    auto p = r.getPosition() - parent->vertices[ids[0]];
+CUDA_CALLABLE_MEMBER
+bool TrimeshFace::intersect(void *obj, ray &r, isect &i) {
+    auto face = (TrimeshFace *)obj;
+
+    auto p = r.getPosition() - face->vertices[0];
     auto d = r.getDirection();
-    auto p_z = glm::dot(nInv, p);
-    auto d_z = glm::dot(nInv, d);
+    auto p_z = glm::dot(face->nInv, p);
+    auto d_z = glm::dot(face->nInv, d);
     if (p_z < 0 == d_z < 0)
         return false;
 
@@ -97,28 +101,25 @@ bool TrimeshFace::intersect(ray &r, isect &i) const {
         return false;
 
     auto hit = p + t * d;
-    double u = glm::dot(uInv, hit); // p1
-    double v = glm::dot(vInv, hit); // p2;
+    double u = glm::dot(face->uInv, hit); // p1
+    double v = glm::dot(face->vInv, hit); // p2;
     double w = 1 - u - v; // p0
 
     if (u < 0 || u > 1 || v < 0 || v > 1 || u + v > 1)
         return false;
 
     i.setT(t);
-    i.setN(normal);
+    i.setN(face->normal);
     i.setUVCoordinates(glm::dvec2(u, v));
-    if (parent->materials.empty()) {
-        i.setMaterial(mat);
-    } else {
-        Material m0 = parent->materials[ids[0]];
-        Material m1 = parent->materials[ids[1]];
-        Material m2 = parent->materials[ids[2]];
-        m0 = w * m0;
-        m1 = u * m1;
-        m2 = v * m2;
+    if (face->hasMaterials) {
+        Material m0 = w * face->materials[0];
+        Material m1 = u * face->materials[1];
+        Material m2 = v * face->materials[2];
         m0 += m1;
         m0 += m2;
         i.setMaterial(m0);
+    } else {
+        i.setMaterial(face->materials[0]);
     }
     return true;
 }
@@ -173,4 +174,11 @@ Trimesh *Trimesh::fromSquare(Material &mat, TransformNode *transform) {
     auto p111 = transform->localToGlobalCoords(glm::dvec3(0.5, 0.5, 0.001));
     glm::dvec3 vertices[8] = {p000, p001, p010, p011, p100, p101, p110, p111};
     return (new Trimesh(mat))->addCube(mat, vertices);
+}
+
+TrimeshFace *TrimeshFace::clone() const {
+    TrimeshFace *d_face;
+    cudaMalloc(&d_face, sizeof(TrimeshFace));
+    cudaMemcpy(d_face, this, sizeof(TrimeshFace), cudaMemcpyHostToDevice);
+    return d_face;
 }

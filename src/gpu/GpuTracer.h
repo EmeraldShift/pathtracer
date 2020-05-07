@@ -7,7 +7,7 @@ class GpuTracer : public Tracer {
 public:
     GpuTracer(TraceUI *ui) : Tracer(ui) {}
 
-    void GpuTracer::traceImage(int width, int height) override;
+    void traceImage(int width, int height) override;
 
     void waitRender() override;
 };

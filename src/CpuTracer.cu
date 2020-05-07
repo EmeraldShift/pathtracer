@@ -135,7 +135,7 @@ glm::dvec3 CpuTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth) {
     auto diffuse = glm::length(i.getMaterial().kd(i));
     auto reflect = i.getMaterial().kr(i).x;
     auto refract = i.getMaterial().kt(i).x;
-    auto rand = random<double>(0, diffuse + reflect + refract);
+    auto rand = random<double>(0, 1);
 
     auto refl = r.getDirection() - 2.0 * i.getN() * glm::dot(i.getN(), r.getDirection());
     if (rand < refract) {
@@ -157,8 +157,8 @@ glm::dvec3 CpuTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth) {
             double b = n2 + n1;
             double R0 = (a * a) / (b * b);
             double c = 1.0 - (into ? -dot : glm::dot(rr.getDirection(), -n));
-            double Re = R0 + (1.0 - R0) * std::pow(c, 5.0);
-            double ratio2 = std::pow(ratio, 2.0);
+            double Re = R0 + (1.0 - R0) * c * c * c * c * c;
+            double ratio2 = ratio * ratio;
             double Tr = (1.0 - Re) * ratio2;
 
             double prob = 0.25 + 0.5 * Re;
@@ -166,18 +166,24 @@ glm::dvec3 CpuTracer::traceRay(ray &r, const glm::dvec3 &thresh, int depth) {
             auto w = glm::dvec3(1) * Tr / 1.0;
             rad = w * traceRay(rr, w * thresh, depth - 1);
         }
-    } else if (rand < refract + reflect) {
-        ray rr(hitOuter, refl);
-        auto color = i.getMaterial().kd(i) + glm::dvec3(0.15, 0.15, 0.15); // Makes even black a little reflective
-        auto w = glm::sqrt(color) / 1.0;
-        rad = w * traceRay(rr, w * thresh, depth - 1);
     } else {
         auto basis = getBasis(i.getN());
-        auto dir = randomVecFromHemisphere(i.getN());
+        auto diff = randomVecFromHemisphere(i.getN());
+        auto dir = glm::normalize(reflect * refl + (1 - reflect) * diff);
         ray rr(hitOuter, dir);
+//        auto color = i.getMaterial().kd(i) + glm::dvec3(0.15, 0.15, 0.15); // Makes even black a little reflective
         auto w = i.getMaterial().kd(i) / 1.0;
-        rad = w * traceRay(rr, w * thresh, depth - 1);
+        rad = w * (traceRay(rr, w * thresh, depth - 1));
+//        auto w = glm::sqrt(color) / 1.0;
+//        rad = w * traceRay(rr, w * thresh, depth - 1);
     }
+//    else {
+//        auto basis = getBasis(i.getN());
+//        auto dir = randomVecFromHemisphere(i.getN());
+//        ray rr(hitOuter, dir);
+//        auto w = glm::dvec3(1) / 1.0;
+//        rad = w * (i.getMaterial().kd(i) + traceRay(rr, w * thresh, depth - 1)) / 2.0;
+//    }
     return i.getMaterial().ke(i) * 32.0 + rad;
 }
 

@@ -62,11 +62,13 @@ public:
         return bvh.traverseIterative(r, i);
     }
 
+    Scene *clone() const;
+
 private:
     std::vector<Geometry *> objects;
     Camera camera;
 
-    BoundedVolumeHierarchy<Geometry *, Geometry::compare, Geometry::spread> bvh;
+    BoundedVolumeHierarchy bvh;
 };
 
 #endif // __SCENE_H__
