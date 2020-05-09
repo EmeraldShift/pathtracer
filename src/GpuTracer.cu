@@ -1,10 +1,9 @@
-#include "GpuTracer.h"
+#include "tracer.h"
 
-#include "cuda.h"
-#include "../scene/geometry.h"
-#include "../scene/material.h"
-#include "../scene/scene.h"
-#include "../scene/ray.h"
+#include "scene/geometry.h"
+#include "scene/material.h"
+#include "scene/scene.h"
+#include "scene/ray.h"
 
 #include <glm/vec3.hpp>
 #include <glm/gtx/norm.hpp>
@@ -20,11 +19,11 @@ constexpr int THREADS_PER_BLOCK = 96;
 struct Pair {
     glm::dvec3 a, b;
 
-    CUDA_CALLABLE_MEMBER Pair(glm::dvec3 a, glm::dvec3 b) : a(a), b(b) {}
+    __host__ __device__ Pair(glm::dvec3 a, glm::dvec3 b) : a(a), b(b) {}
 };
 
-CUDA_CALLABLE_MEMBER
-static Pair getBasis(glm::dvec3 normal) {
+__device__ static Pair
+getBasis(glm::dvec3 normal) {
     auto a = abs(normal[0]) > RAY_EPSILON
              ? glm::normalize(glm::cross(glm::dvec3(0, 1, 0), normal))
              : glm::normalize(glm::cross(glm::dvec3(1, 0, 0), normal));
@@ -32,8 +31,8 @@ static Pair getBasis(glm::dvec3 normal) {
     return Pair(a, b);
 }
 
-CUDA_CALLABLE_MEMBER
-static glm::dvec3 randomVecFromHemisphere(glm::dvec3 normal, curandState &state) {
+__device__ static glm::dvec3
+randomVecFromHemisphere(glm::dvec3 normal, curandState &state) {
     auto basis = getBasis(normal);
     auto p = 2 * M_PI * curand_uniform_double(&state);
     auto cos_p = std::cos(p);
@@ -59,8 +58,8 @@ static glm::dvec3 randomVecFromHemisphere(glm::dvec3 normal, curandState &state)
  * random number generation
  * @return
  */
-CUDA_CALLABLE_MEMBER
-static glm::dvec3 traceRay(Scene *scene, ray &r, int depth, curandState &state) {
+__device__ static glm::dvec3
+traceRay(Scene *scene, ray &r, int depth, curandState &state) {
     auto color = glm::dvec3(0);
     auto thresh = glm::dvec3(1);
     while (true) {
@@ -134,8 +133,7 @@ static glm::dvec3 traceRay(Scene *scene, ray &r, int depth, curandState &state) 
     return color;
 }
 
-CUDA_CALLABLE_MEMBER
-static void
+__global__ static void
 tracePixel(Scene *scene, glm::dvec3 *buffer, unsigned width, unsigned height, unsigned depth, unsigned samples) {
     unsigned idx = threadIdx.x + blockIdx.x * blockDim.x;
     unsigned x = idx % width;

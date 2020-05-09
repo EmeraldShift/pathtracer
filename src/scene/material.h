@@ -7,8 +7,6 @@
 #ifndef __MATERIAL_H__
 #define __MATERIAL_H__
 
-#include "../gpu/cuda.h"
-
 #include <utility>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -89,7 +87,7 @@ public:
              const glm::dvec3 &r, const glm::dvec3 &t, double in)
             : _ke(e), _kd(d), _kr(r), _kt(t), _index(glm::dvec3(in, in, in)) {}
 
-    CUDA_CALLABLE_MEMBER
+    __host__ __device__
     Material &
     operator+=(const Material &m) {
         _ke += m._ke;
@@ -100,21 +98,21 @@ public:
         return *this;
     }
 
-    CUDA_CALLABLE_MEMBER friend Material operator*(double d, Material m);
+    __host__ __device__ friend Material operator*(double d, Material m);
 
     // Accessor functions; we pass in an isect& for cases where
     // the parameter is dependent on, for example, world-space
     // coordinates (i.e., solid textures) or parametrized coordinates
     // (i.e., mapped textures)
-    CUDA_CALLABLE_MEMBER glm::dvec3 ke(const isect &i) const { return _ke; }
+    __host__ __device__ glm::dvec3 ke(const isect &i) const { return _ke; }
 
-    CUDA_CALLABLE_MEMBER glm::dvec3 kd(const isect &i) const { return _kd; }
+    __host__ __device__ glm::dvec3 kd(const isect &i) const { return _kd; }
 
-    CUDA_CALLABLE_MEMBER glm::dvec3 kr(const isect &i) const { return _kr; }
+    __host__ __device__ glm::dvec3 kr(const isect &i) const { return _kr; }
 
-    CUDA_CALLABLE_MEMBER glm::dvec3 kt(const isect &i) const { return _kt; }
+    __host__ __device__ glm::dvec3 kt(const isect &i) const { return _kt; }
 
-    CUDA_CALLABLE_MEMBER double index(const isect &i) const { return _index[0]; }
+    __host__ __device__ double index(const isect &i) const { return _index[0]; }
 
     void setEmissive(const glm::dvec3 &ke) { _ke = ke; }
 
@@ -135,7 +133,7 @@ private:
 };
 
 // This doesn't necessarily make sense for mapped materials
-CUDA_CALLABLE_MEMBER
+__host__ __device__
 inline Material
 operator*(double d, Material m) {
     m._ke *= d;

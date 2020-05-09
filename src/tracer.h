@@ -76,4 +76,13 @@ private:
     std::thread **workers;
 };
 
+class GpuTracer : public Tracer {
+public:
+    GpuTracer(TraceUI *ui) : Tracer(ui) {}
+
+    void traceImage(int width, int height) override;
+
+    void waitRender() override;
+};
+
 #endif // __RAYTRACER_H__

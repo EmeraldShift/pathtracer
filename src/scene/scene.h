@@ -23,7 +23,6 @@
 #include "bvh.h"
 #include "transform.h"
 #include "../gl.h"
-#include "../gpu/cuda.h"
 
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
@@ -52,13 +51,13 @@ public:
         bvh.construct(objects);
     }
 
-    CUDA_CALLABLE_MEMBER Camera &getCamera() { return camera; }
+    __host__ __device__ Camera &getCamera() { return camera; }
 
     bool intersect(ray &r, isect &i) {
         return bvh.traverse(r, i);
     }
 
-    CUDA_CALLABLE_MEMBER bool intersectIterative(ray &r, isect &i) {
+    __host__ __device__ bool intersectIterative(ray &r, isect &i) {
         return bvh.traverseIterative(r, i);
     }
 

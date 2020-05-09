@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../gpu/cuda.h"
-
 #include <glm/vec3.hpp>
 
 class ray;
@@ -27,7 +25,7 @@ public:
         bmax = bMax;
     }
 
-    CUDA_CALLABLE_MEMBER bool intersect(const ray &r, double tMax = 1.0e308) const;
+    __host__ __device__ bool intersect(const ray &r, double tMax = 1.0e308) const;
 
     BoundingBox &operator=(const BoundingBox &target);
 

@@ -13,7 +13,7 @@ public:
         isSphere = true;
     }
 
-    CUDA_CALLABLE_MEMBER static bool intersect(void *obj, ray &r, isect &i);
+    __host__ __device__ static bool intersect(void *obj, ray &r, isect &i);
 
     Sphere *clone() const override;
 

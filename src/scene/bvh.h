@@ -4,7 +4,6 @@
 #include "../gl.h"
 #include "ray.h"
 #include "bbox.h"
-#include "../gpu/cuda.h"
 #include "sphere.h"
 #include "trimesh.h"
 #include <set>
@@ -52,7 +51,7 @@ public:
 
     bool traverse(ray &r, isect &i) const;
 
-    CUDA_CALLABLE_MEMBER bool traverseIterative(ray &r, isect &i) const;
+    __host__ __device__ bool traverseIterative(ray &r, isect &i) const;
 
     BoundedVolumeHierarchy clone() const;
 };

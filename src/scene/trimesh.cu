@@ -85,7 +85,7 @@ const char *Trimesh::doubleCheck() {
     return nullptr;
 }
 
-CUDA_CALLABLE_MEMBER
+__host__ __device__
 bool TrimeshFace::intersect(void *obj, ray &r, isect &i) {
     auto face = (TrimeshFace *)obj;
 

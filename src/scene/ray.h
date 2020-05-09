@@ -2,7 +2,6 @@
 
 #include "../gl.h"
 #include "material.h"
-#include "../gpu/cuda.h"
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <memory>
@@ -18,31 +17,31 @@ constexpr double ISECT_NO_HIT = 12345678.9;
 
 class isect {
 public:
-    CUDA_CALLABLE_MEMBER isect() = default;
+    __host__ __device__ isect() = default;
 
-    CUDA_CALLABLE_MEMBER isect(const isect &other) = default;
+    __host__ __device__ isect(const isect &other) = default;
 
-    CUDA_CALLABLE_MEMBER ~isect() = default;
+    __host__ __device__ ~isect() = default;
 
-    CUDA_CALLABLE_MEMBER void setT(double tt) { t = tt; }
+    __host__ __device__ void setT(double tt) { t = tt; }
 
-    CUDA_CALLABLE_MEMBER double getT() const { return t; }
+    __host__ __device__ double getT() const { return t; }
 
-    CUDA_CALLABLE_MEMBER void setN(const glm::dvec3 &n) { N = n; }
+    __host__ __device__ void setN(const glm::dvec3 &n) { N = n; }
 
-    CUDA_CALLABLE_MEMBER glm::dvec3 getN() const { return N; }
+    __host__ __device__ glm::dvec3 getN() const { return N; }
 
-    CUDA_CALLABLE_MEMBER void setMaterial(const Material &m) {
+    __host__ __device__ void setMaterial(const Material &m) {
         material = m;
     }
 
-    CUDA_CALLABLE_MEMBER const Material &getMaterial() const { return material; }
+    __host__ __device__ const Material &getMaterial() const { return material; }
 
-    CUDA_CALLABLE_MEMBER void setUVCoordinates(const glm::dvec2 &coords) {
+    __host__ __device__ void setUVCoordinates(const glm::dvec2 &coords) {
         uvCoordinates = coords;
     }
 
-    CUDA_CALLABLE_MEMBER glm::dvec2 getUVCoordinates() const { return uvCoordinates; }
+    __host__ __device__ glm::dvec2 getUVCoordinates() const { return uvCoordinates; }
 
 private:
     double t = ISECT_NO_HIT;
@@ -53,33 +52,33 @@ private:
 
 class ray {
 public:
-    CUDA_CALLABLE_MEMBER ray(const glm::dvec3 &p, const glm::dvec3 &d) {
+    __host__ __device__ ray(const glm::dvec3 &p, const glm::dvec3 &d) {
         pos = p;
         dir = d;
         invdir = invert(dir);
     };
 
-    CUDA_CALLABLE_MEMBER ray() = default;
+    __host__ __device__ ray() = default;
 
-    CUDA_CALLABLE_MEMBER ray(const ray &other) = default;
+    __host__ __device__ ray(const ray &other) = default;
 
-    CUDA_CALLABLE_MEMBER ~ray() = default;
+    __host__ __device__ ~ray() = default;
 
-    CUDA_CALLABLE_MEMBER ray &operator=(const ray &other) = default;
+    __host__ __device__ ray &operator=(const ray &other) = default;
 
-    CUDA_CALLABLE_MEMBER glm::dvec3 at(double t) const { return pos + (t * dir); }
+    __host__ __device__ glm::dvec3 at(double t) const { return pos + (t * dir); }
 
-    CUDA_CALLABLE_MEMBER glm::dvec3 at(const isect &i) const { return at(i.getT()); }
+    __host__ __device__ glm::dvec3 at(const isect &i) const { return at(i.getT()); }
 
-    CUDA_CALLABLE_MEMBER glm::dvec3 getPosition() const { return pos; }
+    __host__ __device__ glm::dvec3 getPosition() const { return pos; }
 
-    CUDA_CALLABLE_MEMBER glm::dvec3 getDirection() const { return dir; }
+    __host__ __device__ glm::dvec3 getDirection() const { return dir; }
 
-    CUDA_CALLABLE_MEMBER glm::dvec3 getInverseDirection() const { return invdir; }
+    __host__ __device__ glm::dvec3 getInverseDirection() const { return invdir; }
 
-    CUDA_CALLABLE_MEMBER void setPosition(const glm::dvec3 &pp) { pos = pp; }
+    __host__ __device__ void setPosition(const glm::dvec3 &pp) { pos = pp; }
 
-    CUDA_CALLABLE_MEMBER void setDirection(const glm::dvec3 &dd) {
+    __host__ __device__ void setDirection(const glm::dvec3 &dd) {
         dir = dd;
         invdir = invert(dd);
     }

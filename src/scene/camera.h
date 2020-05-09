@@ -10,7 +10,7 @@ class Camera
 {
 public:
     Camera() = default;
-    CUDA_CALLABLE_MEMBER void rayThrough( double x, double y, ray &r ) const;
+    __host__ __device__ void rayThrough( double x, double y, ray &r ) const;
     void setEye( const glm::dvec3 &eye );
     void setLook( double, double, double, double );
     void setLook( const glm::dvec3 &viewDir, const glm::dvec3 &upDir );

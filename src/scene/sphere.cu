@@ -5,7 +5,7 @@
 #include <glm/gtx/io.hpp>
 #include <iostream>
 
-CUDA_CALLABLE_MEMBER
+__host__ __device__
 bool Sphere::intersect(void *obj, ray &r, isect &i) {
     auto sphere = (Sphere *)obj;
 

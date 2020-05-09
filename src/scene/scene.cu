@@ -1,4 +1,4 @@
-#include "../scene/scene.h"
+#include "scene.h"
 
 Scene *Scene::clone() const {
     Scene *d_scene;
