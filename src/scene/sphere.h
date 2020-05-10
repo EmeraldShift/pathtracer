@@ -5,11 +5,11 @@
 
 class Sphere : public Geometry {
 public:
-    Sphere(const Material &mat, glm::dvec3 position, double radius)
+    Sphere(const Material &mat, glm::vec3 position, float radius)
             : mat(mat), position(position), radius(radius) {
         bounds = BoundingBox(
-                glm::dvec3(position[0] - radius, position[1] - radius, position[2] - radius),
-                glm::dvec3(position[0] + radius, position[1] + radius, position[2] + radius));
+                glm::vec3(position[0] - radius, position[1] - radius, position[2] - radius),
+                glm::vec3(position[0] + radius, position[1] + radius, position[2] + radius));
         isSphere = true;
     }
 
@@ -19,6 +19,6 @@ public:
 
 private:
     Material mat;
-    glm::dvec3 position;
+    glm::vec3 position;
     double radius;
 };

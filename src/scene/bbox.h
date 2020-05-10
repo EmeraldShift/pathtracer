@@ -5,27 +5,27 @@
 class ray;
 
 class BoundingBox {
-    glm::dvec3 bmin;
-    glm::dvec3 bmax;
+    glm::vec3 bmin;
+    glm::vec3 bmax;
 
 public:
     BoundingBox();
 
-    BoundingBox(glm::dvec3 bMin, glm::dvec3 bMax);
+    BoundingBox(glm::vec3 bMin, glm::vec3 bMax);
 
-    glm::dvec3 getMin() const { return bmin; }
+    glm::vec3 getMin() const { return bmin; }
 
-    glm::dvec3 getMax() const { return bmax; }
+    glm::vec3 getMax() const { return bmax; }
 
-    void setMin(glm::dvec3 bMin) {
+    void setMin(glm::vec3 bMin) {
         bmin = bMin;
     }
 
-    void setMax(glm::dvec3 bMax) {
+    void setMax(glm::vec3 bMax) {
         bmax = bMax;
     }
 
-    __host__ __device__ bool intersect(const ray &r, double tMax = 1.0e308) const;
+    __host__ __device__ bool intersect(const ray &r, float tMax = 1.0e308) const;
 
     BoundingBox &operator=(const BoundingBox &target);
 

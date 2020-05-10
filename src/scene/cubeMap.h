@@ -15,5 +15,5 @@ public:
 
 	void setNthMap(int n, TextureMap* m);
 
-	glm::dvec3 getColor(const ray& r) const;
+	glm::vec3 getColor(const ray& r) const;
 };

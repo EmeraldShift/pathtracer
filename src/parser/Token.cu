@@ -1,6 +1,5 @@
 #pragma warning (disable: 4786)
 
-#include <stdio.h>
 #include "Token.h"
 
 #include <map>
@@ -66,7 +65,7 @@ string getNameForToken( const SYMBOL kind )
     tokenNames[ HEIGHT ]            = "height";
     tokenNames[ BOTTOM_RADIUS ]     = "bottom_radius";
     tokenNames[ TOP_RADIUS ]        = "top_radius";
-    tokenNames[ QUATERNIAN ]        = "quaternian";
+    tokenNames[ QUATERNION ]        = "quaternian";
     tokenNames[ POLYPOINTS ]            = "points";
     tokenNames[ HEIGHT ]            = "height";
     tokenNames[ NORMALS ]           = "normals";
@@ -148,7 +147,7 @@ SYMBOL lookupReservedWord(const string& ident) {
     reservedWords["polymesh"] = TRIMESH;
     reservedWords["position"] = POSITION;
     reservedWords["quadratic_attenuation_coeff"] = QUADRATIC_ATTENUATION_COEFF;
-    reservedWords["quaternian"] = QUATERNIAN;
+    reservedWords["quaternian"] = QUATERNION;
     reservedWords["reflective"] = REFLECTIVE;
     reservedWords["rotate"] = ROTATE;
     reservedWords["SBT-raytracer"] = SBT_RAYTRACER;

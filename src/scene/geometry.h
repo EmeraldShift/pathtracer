@@ -13,16 +13,6 @@ public:
 
     virtual Geometry *clone() const = 0;
 
-    static bool compare(Geometry *const lhs, Geometry *const rhs, int i) {
-        return ((lhs->bounds.getMax() + lhs->bounds.getMin()) / 2.0)[i]
-               < ((rhs->bounds.getMax() + rhs->bounds.getMin()) / 2.0)[i];
-    }
-
-    static double spread(std::vector<Geometry *> &v, int i) {
-        return ((v[v.size() - 1]->bounds.getMax() + v[v.size() - 1]->bounds.getMin()) / 2.0)[i]
-               - ((v[0]->bounds.getMax() + v[0]->bounds.getMin()) / 2.0)[i];
-    }
-
     bool isSphere = false;
 
 protected:

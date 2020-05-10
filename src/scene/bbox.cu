@@ -1,29 +1,29 @@
-#include <iostream>
 #include "ray.h"
 #include "bbox.h"
 
 #define min(a, b) (a < b ? a : b)
 #define max(a, b) (a < b ? b : a)
 
-BoundingBox::BoundingBox() : bmin(glm::dvec3(0)), bmax(glm::dvec3(0)) {
+BoundingBox::BoundingBox() : bmin(glm::vec3(0)), bmax(glm::vec3(0)) {
 }
 
-BoundingBox::BoundingBox(glm::dvec3 bMin, glm::dvec3 bMax)
+BoundingBox::BoundingBox(glm::vec3 bMin, glm::vec3 bMax)
         : bmin(bMin), bmax(bMax) {
 }
 
-bool BoundingBox::intersect(const ray &r, double tMax /* = 1.0e308 */) const {
+__host__ __device__
+bool BoundingBox::intersect(const ray &r, float tMax /* = 1.0e308 */) const {
     auto p = r.getPosition();
     auto d = r.getDirection();
     auto n = r.getInverseDirection();
-    double tMin = -1.0e308;//, tMax = 1.0e308;
+    float tMin = -1.0e308;//, tMax = 1.0e308;
 
-    double t10 = (bmin[0] - p[0]) * n[0];
-    double t11 = (bmin[1] - p[1]) * n[1];
-    double t12 = (bmin[2] - p[2]) * n[2];
-    double t20 = (bmax[0] - p[0]) * n[0];
-    double t21 = (bmax[1] - p[1]) * n[1];
-    double t22 = (bmax[2] - p[2]) * n[2];
+    float t10 = (bmin[0] - p[0]) * n[0];
+    float t11 = (bmin[1] - p[1]) * n[1];
+    float t12 = (bmin[2] - p[2]) * n[2];
+    float t20 = (bmax[0] - p[0]) * n[0];
+    float t21 = (bmax[1] - p[1]) * n[1];
+    float t22 = (bmax[2] - p[2]) * n[2];
     tMin = max(tMin, min(t10, t20));
     tMin = max(tMin, min(t11, t21));
     tMin = max(tMin, min(t12, t22));

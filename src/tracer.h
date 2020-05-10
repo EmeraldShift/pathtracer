@@ -66,11 +66,11 @@ public:
     void waitRender() override;
 
 private:
-    glm::dvec3 tracePixel(int i, int j);
+    glm::vec3 tracePixel(int i, int j);
 
-    glm::dvec3 trace(double x, double y);
+    glm::vec3 trace(float x, float y);
 
-    glm::dvec3 traceRay(ray &r, const glm::dvec3 &thresh, int depth);
+    glm::vec3 traceRay(ray &r, const glm::vec3 &thresh, int depth);
 
     unsigned threads;
     std::thread **workers;
@@ -78,7 +78,7 @@ private:
 
 class GpuTracer : public Tracer {
 public:
-    GpuTracer(TraceUI *ui) : Tracer(ui) {}
+    explicit GpuTracer(TraceUI *ui) : Tracer(ui) {}
 
     void traceImage(int width, int height) override;
 

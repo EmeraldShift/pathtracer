@@ -19,8 +19,6 @@
 #include "../scene/transform.h"
 #include "../scene/sphere.h"
 
-typedef std::map<string, Material> mmap;
-
 /*
   class Parser:
     The Parser is where most of the heavy lifting in parsing
@@ -76,7 +74,7 @@ private:
 
     void parseTrimesh(Scene *scene, TransformNode *transform, const Material &mat);
 
-    void parseFaces(std::list<glm::dvec3> &faces);
+    void parseFaces(std::list<glm::vec3> &faces);
 
     // Parse transforms
     void parseTranslate(Scene *scene, TransformNode *transform, const Material &mat);
@@ -89,41 +87,41 @@ private:
 
     // Helper functions for parsing expressions of the form:
     //   keyword = value;
-    double parseScalarExpression();
+    float parseScalarExpression();
 
-    glm::dvec3 parseVec3dExpression();
+    glm::vec3 parseVec3dExpression();
 
-    glm::dvec4 parseVec4dExpression();
+    glm::vec4 parseVec4dExpression();
 
     bool parseBooleanExpression();
 
     Material parseMaterialExpression(Scene *scene, const Material &mat);
 
-    string parseIdentExpression();
+    std::string parseIdentExpression();
 
-    glm::dvec3 parseVec3dMaterialParameter(Scene *scene);
+    glm::vec3 parseVec3dMaterialParameter(Scene *scene);
 
-    glm::dvec3 parseScalarMaterialParameter(Scene *scene);
+    glm::vec3 parseScalarMaterialParameter(Scene *scene);
 
     // Helper functions for parsing things like vectors
     // and idents.
-    double parseScalar();
+    float parseScalar();
 
-    std::list<double> parseScalarList();
+    std::list<float> parseScalarList();
 
-    glm::dvec3 parseVec3d();
+    glm::vec3 parseVec3d();
 
-    glm::dvec4 parseVec4d();
+    glm::vec4 parseVec4d();
 
     bool parseBoolean();
 
     Material parseMaterial(Scene *scene, const Material &parent);
 
-    string parseIdent();
+    std::string parseIdent();
 
 private:
     Tokenizer &_tokenizer;
-    mmap materials;
+    std::map<std::string, Material> materials;
     std::string _basePath;
 };
 

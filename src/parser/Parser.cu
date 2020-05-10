@@ -81,7 +81,7 @@ Scene *Parser::parseScene() {
 
 void Parser::parseCamera(Scene *scene) {
     bool hasViewDir(false), hasUpDir(false);
-    glm::dvec3 viewDir, upDir;
+    glm::vec3 viewDir, upDir;
 
     _tokenizer.Read(CAMERA);
     _tokenizer.Read(LBRACE);
@@ -89,7 +89,7 @@ void Parser::parseCamera(Scene *scene) {
     for (;;) {
         const Token *t = _tokenizer.Peek();
 
-        glm::dvec4 quaternion;
+        glm::vec4 quaternion;
         switch (t->kind()) {
             case POSITION:
                 scene->getCamera().setEye(parseVec3dExpression());
@@ -97,7 +97,7 @@ void Parser::parseCamera(Scene *scene) {
             case FOV:
                 scene->getCamera().setFOV(parseScalarExpression());
                 break;
-            case QUATERNIAN:
+            case QUATERNION:
                 quaternion = parseVec4dExpression();
                 scene->getCamera().setLook(
                         quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
@@ -230,50 +230,46 @@ void Parser::parseGeometry(Scene *scene, TransformNode *transform, const Materia
 void Parser::parseTranslate(Scene *scene, TransformNode *transform, const Material &mat) {
     _tokenizer.Read(TRANSLATE);
     _tokenizer.Read(LPAREN);
-    double x = parseScalar();
+    float x = parseScalar();
     _tokenizer.Read(COMMA);
-    double y = parseScalar();
+    float y = parseScalar();
     _tokenizer.Read(COMMA);
-    double z = parseScalar();
+    float z = parseScalar();
     _tokenizer.Read(COMMA);
 
     // Parse child geometry
     parseTransformableElement(scene,
-                              transform->createChild(glm::translate(glm::dvec3(x, y, z))), mat);
+                              transform->createChild(glm::translate(glm::vec3(x, y, z))), mat);
 
     _tokenizer.Read(RPAREN);
     _tokenizer.CondRead(SEMICOLON);
-
-    return;
 }
 
 void Parser::parseRotate(Scene *scene, TransformNode *transform, const Material &mat) {
     _tokenizer.Read(ROTATE);
     _tokenizer.Read(LPAREN);
-    double x = parseScalar();
+    float x = parseScalar();
     _tokenizer.Read(COMMA);
-    double y = parseScalar();
+    float y = parseScalar();
     _tokenizer.Read(COMMA);
-    double z = parseScalar();
+    float z = parseScalar();
     _tokenizer.Read(COMMA);
-    double w = parseScalar();
+    float w = parseScalar();
     _tokenizer.Read(COMMA);
 
     // Parse child geometry
     parseTransformableElement(scene,
-                              transform->createChild(glm::rotate(w, glm::dvec3(x, y, z))), mat);
+                              transform->createChild(glm::rotate(w, glm::vec3(x, y, z))), mat);
 
     _tokenizer.Read(RPAREN);
     _tokenizer.CondRead(SEMICOLON);
-
-    return;
 }
 
 
 void Parser::parseScale(Scene *scene, TransformNode *transform, const Material &mat) {
     _tokenizer.Read(SCALE);
     _tokenizer.Read(LPAREN);
-    double x, y, z;
+    float x, y, z;
 
     x = parseScalar();
     _tokenizer.Read(COMMA);
@@ -291,12 +287,10 @@ void Parser::parseScale(Scene *scene, TransformNode *transform, const Material &
 
     // Parse child geometry
     parseTransformableElement(scene,
-                              transform->createChild(glm::scale(glm::dvec3(x, y, z))), mat);
+                              transform->createChild(glm::scale(glm::vec3(x, y, z))), mat);
 
     _tokenizer.Read(RPAREN);
     _tokenizer.CondRead(SEMICOLON);
-
-    return;
 }
 
 
@@ -304,13 +298,13 @@ void Parser::parseTransform(Scene *scene, TransformNode *transform, const Materi
     _tokenizer.Read(TRANSFORM);
     _tokenizer.Read(LPAREN);
 
-    glm::dvec4 row1 = parseVec4d();
+    glm::vec4 row1 = parseVec4d();
     _tokenizer.Read(COMMA);
-    glm::dvec4 row2 = parseVec4d();
+    glm::vec4 row2 = parseVec4d();
     _tokenizer.Read(COMMA);
-    glm::dvec4 row3 = parseVec4d();
+    glm::vec4 row3 = parseVec4d();
     _tokenizer.Read(COMMA);
-    glm::dvec4 row4 = parseVec4d();
+    glm::vec4 row4 = parseVec4d();
     _tokenizer.Read(COMMA);
 
     parseTransformableElement(scene,
@@ -318,8 +312,6 @@ void Parser::parseTransform(Scene *scene, TransformNode *transform, const Materi
 
     _tokenizer.Read(RPAREN);
     _tokenizer.CondRead(SEMICOLON);
-
-    return;
 }
 
 void Parser::parseSphere(Scene *scene, TransformNode *transform, const Material &mat) {
@@ -342,8 +334,8 @@ void Parser::parseSphere(Scene *scene, TransformNode *transform, const Material 
             case RBRACE:
                 _tokenizer.Read(RBRACE);
                 scene->add(new Sphere(newMat,
-                                      transform->localToGlobalCoords(glm::dvec4(0, 0, 0, 1)),
-                                      transform->localToGlobalCoords(glm::dvec4(1, 0, 0, 0)).x));
+                                      transform->localToGlobalCoords(glm::vec4(0, 0, 0, 1)),
+                                      transform->localToGlobalCoords(glm::vec4(1, 0, 0, 0)).x));
                 return;
             default:
                 throw SyntaxErrorException("Expected: sphere attributes", _tokenizer);
@@ -461,7 +453,7 @@ void Parser::parseTrimesh(Scene *scene, TransformNode *transform, const Material
     _tokenizer.Read(TRIMESH);
     _tokenizer.Read(LBRACE);
 
-    std::list<glm::dvec3> faces;
+    std::list<glm::vec3> faces;
 
     const char *error;
     for (;;) {
@@ -581,20 +573,20 @@ void Parser::parseTrimesh(Scene *scene, TransformNode *transform, const Material
     }
 }
 
-void Parser::parseFaces(std::list<glm::dvec3> &faces) {
-    std::list<double> points = parseScalarList();
+void Parser::parseFaces(std::list<glm::vec3> &faces) {
+    std::list<float> points = parseScalarList();
 
     // triangulate here and now.  assume the poly is
     // concave (convex?) and we can triangulate using an arbitrary fan
     if (points.size() < 3)
         throw SyntaxErrorException("Faces must have at least 3 vertices.", _tokenizer);
 
-    std::list<double>::const_iterator i = points.begin();
-    double a = (*i++);
-    double b = (*i++);
+    auto i = points.begin();
+    float a = (*i++);
+    float b = (*i++);
     while (i != points.end()) {
-        double c = (*i++);
-        faces.emplace_back(glm::dvec3(a, b, c));
+        float c = (*i++);
+        faces.emplace_back(glm::vec3(a, b, c));
         b = c;
     }
 }
@@ -614,8 +606,8 @@ void Parser::parseAmbientLight(Scene *scene) {
 }
 
 void Parser::parsePointLight(Scene *scene) {
-    glm::dvec3 position;
-    glm::dvec3 color;
+    glm::vec3 position;
+    glm::vec3 color;
 
     bool hasPosition(false), hasColor(false);
 
@@ -651,7 +643,7 @@ void Parser::parsePointLight(Scene *scene) {
                 if (!hasPosition)
                     throw SyntaxErrorException("Expected: 'position'", _tokenizer);
                 _tokenizer.Read(RBRACE);
-                auto m = Material(color, glm::dvec3(), glm::dvec3(), glm::dvec3(1), 1);
+                auto m = Material(color, glm::vec3(), glm::vec3(), glm::vec3(1), 1);
                 auto s = new Sphere(m, position, 1);
                 scene->add(s);
                 return;
@@ -686,11 +678,11 @@ void Parser::parseDirectionalLight() {
 
 // These ought to be done with template member functions, but compiler support for
 // these is rather iffy...
-double Parser::parseScalarExpression() {
+float Parser::parseScalarExpression() {
     // Throw out first token, which precedes the = sign
     _tokenizer.Get();
     _tokenizer.Read(EQUALS);
-    double value(parseScalar());
+    float value(parseScalar());
     _tokenizer.CondRead(SEMICOLON);
     return value;
 }
@@ -703,18 +695,18 @@ bool Parser::parseBooleanExpression() {
     return value;
 }
 
-glm::dvec3 Parser::parseVec3dExpression() {
+glm::vec3 Parser::parseVec3dExpression() {
     _tokenizer.Get();
     _tokenizer.Read(EQUALS);
-    glm::dvec3 value(parseVec3d());
+    auto value(parseVec3d());
     _tokenizer.CondRead(SEMICOLON);
     return value;
 }
 
-glm::dvec4 Parser::parseVec4dExpression() {
+glm::vec4 Parser::parseVec4dExpression() {
     _tokenizer.Get();
     _tokenizer.Read(EQUALS);
-    glm::dvec4 value(parseVec4d());
+    auto value(parseVec4d());
     _tokenizer.CondRead(SEMICOLON);
     return value;
 }
@@ -727,29 +719,27 @@ Material Parser::parseMaterialExpression(Scene *scene, const Material &parent) {
     return mat;
 }
 
-string Parser::parseIdentExpression() {
+std::string Parser::parseIdentExpression() {
     _tokenizer.Get();
     _tokenizer.Read(EQUALS);
-    string value(parseIdent());
+    std::string value(parseIdent());
     _tokenizer.CondRead(SEMICOLON);
     return value;
 }
 
-double Parser::parseScalar() {
+float Parser::parseScalar() {
     unique_ptr<Token> scalar(_tokenizer.Read(SCALAR));
-
     return scalar->value();
 }
 
-string Parser::parseIdent() {
+std::string Parser::parseIdent() {
     unique_ptr<Token> scalar(_tokenizer.Read(IDENT));
-
     return scalar->ident();
 }
 
 
-std::list<double> Parser::parseScalarList() {
-    std::list<double> ret;
+std::list<float> Parser::parseScalarList() {
+    std::list<float> ret;
 
     _tokenizer.Read(LPAREN);
     if (RPAREN != _tokenizer.Peek()->kind()) {
@@ -781,7 +771,7 @@ bool Parser::parseBoolean() {
     throw SyntaxErrorException("Expected boolean", _tokenizer);
 }
 
-glm::dvec3 Parser::parseVec3d() {
+glm::vec3 Parser::parseVec3d() {
     _tokenizer.Read(LPAREN);
     unique_ptr<Token> value1(_tokenizer.Read(SCALAR));
     _tokenizer.Read(COMMA);
@@ -790,12 +780,12 @@ glm::dvec3 Parser::parseVec3d() {
     unique_ptr<Token> value3(_tokenizer.Read(SCALAR));
     _tokenizer.Read(RPAREN);
 
-    return glm::dvec3(value1->value(),
-                      value2->value(),
-                      value3->value());
+    return glm::vec3(value1->value(),
+                     value2->value(),
+                     value3->value());
 }
 
-glm::dvec4 Parser::parseVec4d() {
+glm::vec4 Parser::parseVec4d() {
     _tokenizer.Read(LPAREN);
     unique_ptr<Token> value1(_tokenizer.Read(SCALAR));
     _tokenizer.Read(COMMA);
@@ -806,10 +796,10 @@ glm::dvec4 Parser::parseVec4d() {
     unique_ptr<Token> value4(_tokenizer.Read(SCALAR));
     _tokenizer.Read(RPAREN);
 
-    return glm::dvec4(value1->value(),
-                      value2->value(),
-                      value3->value(),
-                      value4->value());
+    return glm::vec4(value1->value(),
+                     value2->value(),
+                     value3->value(),
+                     value4->value());
 }
 
 Material Parser::parseMaterial(Scene *scene, const Material &parent) {
@@ -875,7 +865,7 @@ Material Parser::parseMaterial(Scene *scene, const Material &parent) {
     }
 }
 
-glm::dvec3 Parser::parseVec3dMaterialParameter(Scene *scene) {
+glm::vec3 Parser::parseVec3dMaterialParameter(Scene *scene) {
     _tokenizer.Get();
     _tokenizer.Read(EQUALS);
     if (_tokenizer.CondRead(MAP)) {
@@ -885,15 +875,15 @@ glm::dvec3 Parser::parseVec3dMaterialParameter(Scene *scene) {
         filename.append(parseIdent());
         _tokenizer.Read(RPAREN);
         _tokenizer.CondRead(SEMICOLON);
-        return glm::dvec3(1.0, 0.0, 1.0);
+        return glm::vec3(1.0, 0.0, 1.0);
     } else {
-        glm::dvec3 value(parseVec3d());
+        glm::vec3 value(parseVec3d());
         _tokenizer.CondRead(SEMICOLON);
         return value;
     }
 }
 
-glm::dvec3 Parser::parseScalarMaterialParameter(Scene *scene) {
+glm::vec3 Parser::parseScalarMaterialParameter(Scene *scene) {
     _tokenizer.Get();
     _tokenizer.Read(EQUALS);
     if (_tokenizer.CondRead(MAP)) {
@@ -901,10 +891,10 @@ glm::dvec3 Parser::parseScalarMaterialParameter(Scene *scene) {
         string filename = parseIdent();
         _tokenizer.Read(RPAREN);
         _tokenizer.CondRead(SEMICOLON);
-        return glm::dvec3(1.0, 1.0, 1.0);
+        return glm::vec3(1.0, 1.0, 1.0);
     } else {
-        double value = parseScalar();
+        float value = parseScalar();
         _tokenizer.CondRead(SEMICOLON);
-        return glm::dvec3(value, value, value);
+        return glm::vec3(value, value, value);
     }
 }

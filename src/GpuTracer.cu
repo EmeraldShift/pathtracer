@@ -11,34 +11,33 @@
 #include <iostream>
 #include <curand.h>
 #include <curand_kernel.h>
+#include "cuda_profiler_api.h"
 
-constexpr int THREADS_PER_BLOCK = 96;
+constexpr int THREADS_PER_BLOCK = 128;
 
 #define abs(a) (a < 0 ? -a : a)
 
 struct Pair {
-    glm::dvec3 a, b;
-
-    __host__ __device__ Pair(glm::dvec3 a, glm::dvec3 b) : a(a), b(b) {}
+    glm::vec3 a, b;
 };
 
 __device__ static Pair
-getBasis(glm::dvec3 normal) {
+getBasis(glm::vec3 normal) {
     auto a = abs(normal[0]) > RAY_EPSILON
-             ? glm::normalize(glm::cross(glm::dvec3(0, 1, 0), normal))
-             : glm::normalize(glm::cross(glm::dvec3(1, 0, 0), normal));
+             ? glm::normalize(glm::cross(glm::vec3(0, 1, 0), normal))
+             : glm::normalize(glm::cross(glm::vec3(1, 0, 0), normal));
     auto b = glm::cross(normal, a);
-    return Pair(a, b);
+    return {a, b};
 }
 
-__device__ static glm::dvec3
-randomVecFromHemisphere(glm::dvec3 normal, curandState &state) {
+__device__ static glm::vec3
+randomVecFromHemisphere(glm::vec3 normal, curandState &state) {
     auto basis = getBasis(normal);
-    auto p = 2 * M_PI * curand_uniform_double(&state);
+    auto p = 2 * 3.141592f * curand_uniform(&state);
     auto cos_p = std::cos(p);
     auto sin_p = std::sin(p);
-    auto cos_t = std::pow(curand_uniform_double(&state), 2);
-    auto sin_t = std::sqrt(1.0 - cos_t * cos_t);
+    auto cos_t = std::pow(curand_uniform(&state), 2);
+    auto sin_t = std::sqrt(1.0f - cos_t * cos_t);
     return sin_t * cos_p * basis.a + sin_t * sin_p * basis.b + cos_t * normal;
 }
 
@@ -60,11 +59,11 @@ randomVecFromHemisphere(glm::dvec3 normal, curandState &state) {
  */
 __device__ static glm::dvec3
 traceRay(Scene *scene, ray &r, int depth, curandState &state) {
-    auto color = glm::dvec3(0);
-    auto thresh = glm::dvec3(1);
+    auto color = glm::vec3(0);
+    auto thresh = glm::vec3(1);
     while (true) {
         isect i;
-        if (glm::length2(thresh) < 3.0 * 12.0 / 255.0 / 255.0)
+        if (glm::length2(thresh) < 3.0f * 12.0f / 255.0f / 255.0f)
             break;
 
         // Stop tracing if we miss the scene
@@ -78,45 +77,45 @@ traceRay(Scene *scene, ray &r, int depth, curandState &state) {
 
         // Stop tracing if we exceed depth limit
         if (depth < 0) {
-            color *= thresh * i.getMaterial().ke(i) * 32.0;
+            color *= thresh * i.getMaterial().ke(i) * 32.0f;
             break;
         }
 
-        glm::dvec3 rad(0);
+        glm::vec3 rad(0);
         auto diffuse = glm::length(i.getMaterial().kd(i));
         auto reflect = i.getMaterial().kr(i).x;
         auto refract = i.getMaterial().kt(i).x;
         auto rand = curand_uniform_double(&state);
 
         // New ray generation, either refractive or diffuse
-        auto refl = r.getDirection() - 2.0 * i.getN() * glm::dot(i.getN(), r.getDirection());
+        auto refl = r.getDirection() - 2.0f * i.getN() * glm::dot(i.getN(), r.getDirection());
         if (rand < refract) {
             bool into = glm::dot(r.getDirection(), i.getN()) < 0;
             auto n = into ? i.getN() : -i.getN();
-            auto n1 = 1.0;
+            auto n1 = 1.0f;
             auto n2 = i.getMaterial().index(i);
             auto ratio = into ? n1 / n2 : n2 / n1;
             auto dot = glm::dot(r.getDirection(), n);
             auto cos2t = 1 - ratio * ratio * (1 - dot * dot);
             if (cos2t < 0) {
                 r = ray(hitOuter, refl);
-                color += thresh * i.getMaterial().ke(i) * 32.0;
-                thresh *= i.getMaterial().kr(i) / 1.0;
+                color += thresh * i.getMaterial().ke(i) * 32.0f;
+                thresh *= i.getMaterial().kr(i) / 1.0f;
                 depth--;
             } else {
                 auto dir = glm::normalize(r.getDirection() * ratio - n * (dot * ratio + sqrt(cos2t)));
                 double a = n2 - n1;
                 double b = n2 + n1;
                 double R0 = (a * a) / (b * b);
-                double c = 1.0 - (into ? -dot : glm::dot(dir, -n));
-                double Re = R0 + (1.0 - R0) * c * c * c * c * c;
+                double c = 1.0f - (into ? -dot : glm::dot(dir, -n));
+                double Re = R0 + (1.0f - R0) * c * c * c * c * c;
                 double ratio2 = ratio * ratio;
-                double Tr = (1.0 - Re) * ratio2;
+                double Tr = (1.0f - Re) * ratio2;
 
-                double prob = 0.25 + 0.5 * Re;
+                double prob = 0.25f + 0.5f * Re;
                 // XXX depth test
                 r = ray(hitInner, dir);
-                color += thresh * i.getMaterial().ke(i) * 32.0;
+                color += thresh * i.getMaterial().ke(i) * 32.0f;
                 thresh *= Tr;
                 depth--;
             }
@@ -125,7 +124,7 @@ traceRay(Scene *scene, ray &r, int depth, curandState &state) {
             auto diff = randomVecFromHemisphere(i.getN(), state);
             auto dir = glm::normalize(reflect * refl + (1 - reflect) * diff);
             r = ray(hitOuter, dir);
-            color += thresh * i.getMaterial().ke(i) * 32.0;
+            color += thresh * i.getMaterial().ke(i) * 32.0f;
             thresh *= i.getMaterial().kd(i);
             depth--;
         }
@@ -146,10 +145,10 @@ tracePixel(Scene *scene, glm::dvec3 *buffer, unsigned width, unsigned height, un
         // Trace a ray for each subpixel, add up, and normalize.
         for (auto sx = 0; sx < samples; sx++) {
             for (auto sy = 0; sy < samples; sy++) {
-                auto xx = double(x) - 0.5 + (1 + 2 * sx) / (2.0 * samples);
-                auto yy = double(y) - 0.5 + (1 + 2 * sy) / (2.0 * samples);
+                auto xx = float(x) - 0.5 + (1 + 2 * sx) / (2.0 * samples);
+                auto yy = float(y) - 0.5 + (1 + 2 * sy) / (2.0 * samples);
                 ray r(glm::dvec3(0, 0, 0), glm::dvec3(0, 0, 0));
-                scene->getCamera().rayThrough(xx / double(width), yy / double(height), r);
+                scene->getCamera().rayThrough(xx / float(width), yy / float(height), r);
                 auto d = depth;
                 sum += glm::clamp(traceRay(scene, r, depth, state), 0.0, 1.0);
             }
@@ -160,6 +159,7 @@ tracePixel(Scene *scene, glm::dvec3 *buffer, unsigned width, unsigned height, un
 }
 
 void GpuTracer::traceImage(int width, int height) {
+    cudaProfilerStart();
     // Allocate a buffer of color vectors per pixel
     auto size = width * height;
     auto raw = new glm::dvec3[size];
@@ -179,6 +179,7 @@ void GpuTracer::traceImage(int width, int height) {
     cudaDeviceSynchronize();
     cudaMemcpy(raw, d_raw, size * sizeof(glm::dvec3), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
+    cudaProfilerStop();
 
     // Draw
     for (int y = 0; y < height; y++)

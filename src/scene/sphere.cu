@@ -23,7 +23,7 @@ bool Sphere::intersect(void *obj, ray &r, isect &i) {
     if (t2 < RAY_EPSILON)
         return false;
 
-    double t1 = dot - discriminant;
+    auto t1 = dot - discriminant;
 
     if (t1 > RAY_EPSILON && t1 < i.getT()) {
         auto col = sphere->mat.kd(i);

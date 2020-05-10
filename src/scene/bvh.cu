@@ -1,6 +1,4 @@
 #include "bvh.h"
-#include "sphere.h"
-#include "trimesh.h"
 
 /**
  * Compare two objects across a given axis.
@@ -14,8 +12,8 @@
  */
 template<int i>
 static bool compare(const Geometry *lhs, const Geometry *rhs) {
-    return ((lhs->getBoundingBox().getMax() + lhs->getBoundingBox().getMin()) / 2.0)[i]
-           < ((rhs->getBoundingBox().getMax() + rhs->getBoundingBox().getMin()) / 2.0)[i];
+    return ((lhs->getBoundingBox().getMax() + lhs->getBoundingBox().getMin()) / 2.0f)[i]
+           < ((rhs->getBoundingBox().getMax() + rhs->getBoundingBox().getMin()) / 2.0f)[i];
 }
 
 /**
@@ -26,12 +24,12 @@ static bool compare(const Geometry *lhs, const Geometry *rhs) {
  * @param v The vector to measure
  * @return The spread of the vector
  */
-static double spread(std::vector<Geometry *> &v, int i) {
-    return ((v[v.size() - 1]->getBoundingBox().getMax() + v[v.size() - 1]->getBoundingBox().getMin()) / 2.0)[i]
-           - ((v[0]->getBoundingBox().getMax() + v[0]->getBoundingBox().getMin()) / 2.0)[i];
+static float spread(std::vector<Geometry *> &v, int i) {
+    return ((v[v.size() - 1]->getBoundingBox().getMax() + v[v.size() - 1]->getBoundingBox().getMin()) / 2.0f)[i]
+           - ((v[0]->getBoundingBox().getMax() + v[0]->getBoundingBox().getMin()) / 2.0f)[i];
 }
 
-static double area(BoundingBox &bb) {
+static float area(BoundingBox &bb) {
     auto min = bb.getMin();
     auto max = bb.getMax();
     auto x = max[0] - min[0];
@@ -41,7 +39,7 @@ static double area(BoundingBox &bb) {
     return a < RAY_EPSILON ? 1e308 : a; // Default empty bbox to infinite area
 }
 
-static double sah(int n_l, double s_l, int n_r, double s_r, double s_p) {
+static float sah(int n_l, float s_l, int n_r, float s_r, float s_p) {
     return 1 + 3.0 * (n_l * (s_l / s_p) + n_r * (s_r / s_p));
 }
 
@@ -72,7 +70,7 @@ static Cluster *genCluster(std::vector<Geometry *> &xvec,
     auto bestSplit = -1;
     auto size = xvec.size();
     auto bestCost = 3.0 * size;
-    auto leftArea = new double[size];
+    auto leftArea = new float[size];
     auto allBounds = BoundingBox();
     for (int i = 0; i < size; i++)
         allBounds.merge(xvec[i]->getBoundingBox());
@@ -90,7 +88,7 @@ static Cluster *genCluster(std::vector<Geometry *> &xvec,
         bb = BoundingBox();
         for (int i = size - 1; i > 0; i--) {
             bb.merge(xvec[i]->getBoundingBox());
-            double cost = sah(i, leftArea[i - 1], size - i, area(bb), leftArea[size - 1]);
+            auto cost = sah(i, leftArea[i - 1], size - i, area(bb), leftArea[size - 1]);
             if (cost < bestCost) {
                 bestCost = cost;
                 bestAxis = axis;
@@ -166,6 +164,7 @@ bool BoundedVolumeHierarchy::traverse(ray &r, isect &i) const {
     return root == nullptr ? false : root->intersect(r, i);
 }
 
+__host__ __device__
 bool BoundedVolumeHierarchy::traverseIterative(ray &r, isect &i) const {
     if (root == nullptr)
         return false;

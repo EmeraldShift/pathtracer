@@ -5,22 +5,23 @@
 #define PI 3.14159265359
 #define SHOW(x) (cerr << #x << " = " << (x) << "\n")
 
-void Camera::rayThrough(double x, double y, ray &r) const
+__host__ __device__
+void Camera::rayThrough(float x, float y, ray &r) const
 // Ray through normalized window point x,y.  In normalized coordinates
 // the camera's x and y vary both vary from 0 to 1.
 {
     x -= 0.5;
     y -= 0.5;
-    glm::dvec3 dir = glm::normalize(look + x * u + y * v);
+    glm::vec3 dir = glm::normalize(look + x * u + y * v);
     r.setPosition(eye);
     r.setDirection(dir);
 }
 
-void Camera::setEye(const glm::dvec3 &eye) {
+void Camera::setEye(const glm::vec3 &eye) {
     this->eye = eye;
 }
 
-void Camera::setLook(double r, double i, double j, double k)
+void Camera::setLook(float r, float i, float j, float k)
 {
     m[0][0] = 1.0 - 2.0 * (i * i + j * j);
     m[0][1] = 2.0 * (r * i - j * k);
@@ -39,16 +40,16 @@ void Camera::setLook(double r, double i, double j, double k)
 }
 
 void
-Camera::setLook(const glm::dvec3 &viewDir, const glm::dvec3 &upDir) {
-    glm::dvec3 z = -viewDir;
-    const glm::dvec3 &y = upDir;
-    glm::dvec3 x = glm::cross(y, z);
+Camera::setLook(const glm::vec3 &viewDir, const glm::vec3 &upDir) {
+    glm::vec3 z = -viewDir;
+    const glm::vec3 &y = upDir;
+    glm::vec3 x = glm::cross(y, z);
     m = glm::dmat3x3(x, y, z); // Do we need to transpose?
     update();
 }
 
 void
-Camera::setFOV(double fov)
+Camera::setFOV(float fov)
 {
     fov /= (180.0 / PI);
     normalizedHeight = 2 * tan(fov / 2);
@@ -56,7 +57,7 @@ Camera::setFOV(double fov)
 }
 
 void
-Camera::setAspectRatio(double ar)
+Camera::setAspectRatio(float ar)
 {
     aspectRatio = ar;
     update();
@@ -64,7 +65,7 @@ Camera::setAspectRatio(double ar)
 
 void
 Camera::update() {
-    u = m * glm::dvec3(1, 0, 0) * normalizedHeight * aspectRatio;
-    v = m * glm::dvec3(0, 1, 0) * normalizedHeight;
-    look = m * glm::dvec3(0, 0, -1);
+    u = m * glm::vec3(1, 0, 0) * normalizedHeight * aspectRatio;
+    v = m * glm::vec3(0, 1, 0) * normalizedHeight;
+    look = m * glm::vec3(0, 0, -1);
 }
