@@ -24,7 +24,7 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
 	progName = argv[0];
 	const char* jsonfile = nullptr;
 	string cubemap_file;
-	while ((i = getopt(argc, argv, "t:r:w:hj:c:s:g")) != EOF) {
+	while ((i = getopt(argc, argv, "t:r:w:hj:c:s:gq:")) != EOF) {
 		switch (i) {
 		    case 't':
 		        m_threads = atoi(optarg);
@@ -46,6 +46,9 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
 		    case 'g':
 		        m_gpu = true;
 		        break;
+		    case 'q':
+                m_qoog = atoi(optarg);
+                break;
 			case 'h':
 				usage();
 				exit(1);

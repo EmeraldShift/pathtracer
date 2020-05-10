@@ -13,8 +13,6 @@
 #include <curand_kernel.h>
 #include "cuda_profiler_api.h"
 
-constexpr int THREADS_PER_BLOCK = 128;
-
 #define abs(a) (a < 0 ? -a : a)
 
 struct Pair {
@@ -173,8 +171,9 @@ void GpuTracer::traceImage(int width, int height) {
     auto d_scene = scene->clone();
 
     // Yeet the pixel buffer to the device, render, and fetch the values.
+    auto qoog =
     cudaMemcpy(d_raw, raw, size * sizeof(glm::dvec3), cudaMemcpyHostToDevice);
-    tracePixel<<<(size+THREADS_PER_BLOCK-1)/THREADS_PER_BLOCK, THREADS_PER_BLOCK>>>(
+    tracePixel<<<(size+threadsPerBlock-1)/threadsPerBlock, threadsPerBlock>>>(
             d_scene, d_raw, width, height, depth, samples);
     cudaDeviceSynchronize();
     cudaMemcpy(raw, d_raw, size * sizeof(glm::dvec3), cudaMemcpyDeviceToHost);

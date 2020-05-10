@@ -43,6 +43,7 @@ public:
     static int m_threads; // number of threads to run
     static bool m_debug;
     bool m_gpu = false;
+    int m_qoog = 64;
 
     static bool matchCubemapFiles(const string &one_cubemap_file,
                                   string matched_fn[6],

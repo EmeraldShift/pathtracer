@@ -43,11 +43,11 @@ static std::pair<glm::vec3, glm::vec3> getBasis(glm::vec3 normal) {
 
 static glm::vec3 randomVecFromHemisphere(glm::vec3 normal) {
     auto basis = getBasis(normal);
-    auto p = 2 * 3.141592f * random<float>(0, 1);
-    auto cos_p = std::cos(p);
-    auto sin_p = std::sin(p);
-    auto cos_t = std::pow(random<float>(0, 1), 2);
-    auto sin_t = std::sqrt(1.0f - cos_t * cos_t);
+    float p = 2 * 3.141592f * random<float>(0, 1);
+    float cos_p = std::cos(p);
+    float sin_p = std::sin(p);
+    float cos_t = std::pow(random<float>(0, 1), 2);
+    float sin_t = std::sqrt(1.0f - cos_t * cos_t);
     return sin_t * cos_p * basis.first + sin_t * sin_p * basis.second + cos_t * normal;
 }
 

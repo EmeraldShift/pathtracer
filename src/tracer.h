@@ -78,11 +78,16 @@ private:
 
 class GpuTracer : public Tracer {
 public:
-    explicit GpuTracer(TraceUI *ui) : Tracer(ui) {}
+    explicit GpuTracer(TraceUI *ui) : Tracer(ui) {
+        threadsPerBlock = ui->m_qoog;
+    }
 
     void traceImage(int width, int height) override;
 
     void waitRender() override;
+
+private:
+    unsigned threadsPerBlock;
 };
 
 #endif // __RAYTRACER_H__
