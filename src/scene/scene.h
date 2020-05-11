@@ -50,10 +50,12 @@ public:
     }
 
     void updateObjects(){
-
-        //TODO stable sort by x and then by y
+        //since we're looking down the x dir
         std::sort(actual.begin(), actual.end(), compare<2>);
         std::sort(actual.begin(), actual.end(), compare<1>);
+
+        //makes pos in objs same as in actual
+        //makes everything in contiguous memory
         for (int i = 0; i < actual.size(); i++)
             objects[i] = &actual[i];
     }

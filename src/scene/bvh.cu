@@ -154,7 +154,7 @@ void BoundedVolumeHierarchy::construct(std::vector<Geometry *> &objs) {
     auto zset = std::multiset<Geometry *, bool (*)(const Geometry *, const Geometry *)>(compare<2>);
     int i = 1; //one indexed bc we do checks on "nullness of obj"
     for (Geometry * f : objs) {
-        f->index = i++; //set the index of this in objs
+        f->index = i++; //set the index of this in objs, same as pos in actual
         xset.insert(f);
         yset.insert(f);
         zset.insert(f);
