@@ -48,6 +48,7 @@ public:
 
     void constructBvh() {
         bvh.construct(objects);
+        bvh.flatten();
     }
 
     __host__ __device__ Camera &getCamera() { return camera; }
