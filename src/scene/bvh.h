@@ -20,13 +20,7 @@ struct Cluster {
     Cluster *left, *right;
     Geometry *obj;
 
-    bool intersect(ray &r, isect &i) {
-        if (obj)
-            return obj->isSphere ? Sphere::intersect(obj, r, i) : TrimeshFace::intersect(obj, r, i);
-        else
-            return (left->bbox.intersect(r, i.getT()) && left->intersect(r, i))
-                   | (right->bbox.intersect(r, i.getT()) && right->intersect(r, i));
-    }
+    bool intersect(ray &r, isect &i) const;
 
     Cluster *clone() const;
 };

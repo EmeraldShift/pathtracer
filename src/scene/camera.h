@@ -3,6 +3,7 @@
 
 #include "ray.h"
 #include "../gl.h"
+#include "../vec.h"
 #include <glm/vec3.hpp>
 #include <glm/mat3x3.hpp>
 
@@ -12,11 +13,11 @@ public:
 
     __host__ __device__ void rayThrough(float x, float y, ray &r) const;
 
-    void setEye(const glm::vec3 &eye);
+    void setEye(const f4 &e) { eye = e; };
 
     void setLook(float, float, float, float);
 
-    void setLook(const glm::vec3 &viewDir, const glm::vec3 &upDir);
+    void setLook(const f4 &viewDir, const f4 &upDir);
 
     void setFOV(float);
 
@@ -29,11 +30,11 @@ private:
 
     float normalizedHeight = 1;
     float aspectRatio = 1;
-    glm::mat3 m = glm::dmat3x3(1);
-    glm::vec3 eye = glm::vec3(0, 0, 0);
-    glm::vec3 u = glm::vec3(1, 0, 0);
-    glm::vec3 v = glm::vec3(0, 1, 0);
-    glm::vec3 look = glm::vec3(0, 1, -1);
+    glm::mat3 m = glm::mat3x3(1);
+    f4 eye;
+    f4 u = {1, 0, 0};
+    f4 v = {0, 1, 0};
+    f4 look = {0, 1, -1};
 };
 
 #endif

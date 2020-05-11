@@ -22,7 +22,6 @@ public:
             depth(traceUi->getDepth()),
             samples(traceUi->getSuperSamples()),
             cubeMap(traceUi->getCubeMap()) {
-        std::cout << "tracer got " << cubeMap << std::endl;
     }
 
     ~Tracer() = default;
@@ -40,7 +39,7 @@ public:
     void getBuffer(unsigned char *&buf, int &w, int &h);
 
 protected:
-    void setPixel(int i, int j, glm::dvec3 color);
+    void setPixel(int i, int j, f4 color);
 
     unsigned depth;
     unsigned samples;
@@ -66,11 +65,11 @@ public:
     void waitRender() override;
 
 private:
-    glm::vec3 tracePixel(int i, int j);
+    f4 tracePixel(int i, int j);
 
-    glm::vec3 trace(float x, float y);
+    f4 trace(float x, float y);
 
-    glm::vec3 traceRay(ray &r, const glm::vec3 &thresh, int depth);
+    f4 traceRay(ray &r, const f4 &thresh, int depth);
 
     unsigned threads;
     std::thread **workers;

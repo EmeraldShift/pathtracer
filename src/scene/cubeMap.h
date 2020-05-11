@@ -2,6 +2,7 @@
 
 #include <memory>
 #include "../gl.h"
+#include "../vec.h"
 #include <glm/vec3.hpp>
 
 class TextureMap;
@@ -15,5 +16,5 @@ public:
 
 	void setNthMap(int n, TextureMap* m);
 
-	glm::vec3 getColor(const ray& r) const;
+	f4 getColor(const ray& r) const;
 };

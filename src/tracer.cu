@@ -89,7 +89,7 @@ void Tracer::traceSetup(int w, int h) {
     std::fill(buffer.begin(), buffer.end(), 0);
 }
 
-void Tracer::setPixel(int i, int j, glm::dvec3 color) {
+void Tracer::setPixel(int i, int j, f4 color) {
     unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
     pixel[0] = (int) (255.0 * (1.0 / hable(W)) * hable(exposureBias * color[0]));
     pixel[1] = (int) (255.0 * (1.0 / hable(W)) * hable(exposureBias * color[1]));

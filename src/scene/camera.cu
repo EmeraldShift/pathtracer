@@ -1,9 +1,7 @@
 #include <iostream>
 #include "camera.h"
-#include "../ui/TraceUI.h"
 
 #define PI 3.14159265359
-#define SHOW(x) (cerr << #x << " = " << (x) << "\n")
 
 __host__ __device__
 void Camera::rayThrough(float x, float y, ray &r) const
@@ -12,17 +10,12 @@ void Camera::rayThrough(float x, float y, ray &r) const
 {
     x -= 0.5;
     y -= 0.5;
-    glm::vec3 dir = glm::normalize(look + x * u + y * v);
+    auto dir = f4m::normalize(look + x * u + y * v);
     r.setPosition(eye);
     r.setDirection(dir);
 }
 
-void Camera::setEye(const glm::vec3 &eye) {
-    this->eye = eye;
-}
-
-void Camera::setLook(float r, float i, float j, float k)
-{
+void Camera::setLook(float r, float i, float j, float k) {
     m[0][0] = 1.0 - 2.0 * (i * i + j * j);
     m[0][1] = 2.0 * (r * i - j * k);
     m[0][2] = 2.0 * (j * r + i * k);
@@ -40,25 +33,26 @@ void Camera::setLook(float r, float i, float j, float k)
 }
 
 void
-Camera::setLook(const glm::vec3 &viewDir, const glm::vec3 &upDir) {
-    glm::vec3 z = -viewDir;
-    const glm::vec3 &y = upDir;
-    glm::vec3 x = glm::cross(y, z);
-    m = glm::dmat3x3(x, y, z); // Do we need to transpose?
+Camera::setLook(const f4 &viewDir, const f4 &upDir) {
+    auto z = -viewDir;
+    const auto &y = upDir;
+    auto x = f4m::cross(y, z);
+    m = glm::mat3x3(
+            glm::vec3(x[0], x[1], x[2]),
+            glm::vec3(y[0], y[1], y[2]),
+            glm::vec3(z[0], z[1], z[2]));
     update();
 }
 
 void
-Camera::setFOV(float fov)
-{
-    fov /= (180.0 / PI);
+Camera::setFOV(float fov) {
+    fov /= (180.0f / 3.141592f);
     normalizedHeight = 2 * tan(fov / 2);
     update();
 }
 
 void
-Camera::setAspectRatio(float ar)
-{
+Camera::setAspectRatio(float ar) {
     aspectRatio = ar;
     update();
 }

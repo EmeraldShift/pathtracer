@@ -17,9 +17,9 @@ TextureMap::TextureMap(const string& filename) {
     }
 }
 
-glm::vec3 TextureMap::getMappedValue(const glm::vec2 &coord) const {
-    auto x = coord[0] * width;
-    auto y = coord[1] * height;
+f4 TextureMap::getMappedValue(const float2 &coord) const {
+    auto x = coord.x * width;
+    auto y = coord.y * height;
 
     auto lerp_x = x - (int) x;
     auto lerp_y = y - (int) y;
@@ -29,9 +29,9 @@ glm::vec3 TextureMap::getMappedValue(const glm::vec2 &coord) const {
     return lerp_y * vlerp_xr + (1 - lerp_y) * vlerp_xl;
 }
 
-glm::vec3 TextureMap::getPixelAt(int x, int y) const {
+f4 TextureMap::getPixelAt(int x, int y) const {
     x = std::max(0, std::min(width - 1, x));
     y = std::max(0, std::min(height - 1, y));
     auto idx = (x + y * width) * 3;
-    return glm::vec3(data[idx] / 256.0, data[idx + 1] / 256.0, data[idx + 2] / 256.0);
+    return {data[idx] / 256.0f, data[idx + 1] / 256.0f, data[idx + 2] / 256.0f};
 }

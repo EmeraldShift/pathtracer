@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include "../vec.h"
 
 class ray;
 
@@ -36,13 +37,13 @@ public:
     // is assumed to be within the parametrization space:
     // [0, 1] x [0, 1]
     // (i.e., {(u, v): 0 <= u <= 1 and 0 <= v <= 1}
-    glm::vec3 getMappedValue(const glm::vec2 &coord) const;
+    f4 getMappedValue(const float2 &coord) const;
 
     // Retrieve the value stored in a physical location
     // (with integer coordinates) in the bitmap.
     // Should be called from getMappedValue in order to
     // do bilinear interpolation.
-    glm::vec3 getPixelAt(int x, int y) const;
+    f4 getPixelAt(int x, int y) const;
 
     ~TextureMap() = default;
 
@@ -83,8 +84,8 @@ public:
 
     ~Material() = default;
 
-    Material(const glm::vec3 &e, const glm::vec3 &d,
-             const glm::vec3 &r, const glm::vec3 &t, float in)
+    Material(const f4 &e, const f4 &d,
+             const f4 &r, const f4 &t, float in)
             : _ke(e), _kd(d), _kr(r), _kt(t), _index(glm::vec3(in, in, in)) {}
 
     __host__ __device__
@@ -104,32 +105,32 @@ public:
     // the parameter is dependent on, for example, world-space
     // coordinates (i.e., solid textures) or parametrized coordinates
     // (i.e., mapped textures)
-    __host__ __device__ glm::vec3 ke(const isect &i) const { return _ke; }
+    __host__ __device__ f4 ke(const isect &i) const { return _ke; }
 
-    __host__ __device__ glm::vec3 kd(const isect &i) const { return _kd; }
+    __host__ __device__ f4 kd(const isect &i) const { return _kd; }
 
-    __host__ __device__ glm::vec3 kr(const isect &i) const { return _kr; }
+    __host__ __device__ f4 kr(const isect &i) const { return _kr; }
 
-    __host__ __device__ glm::vec3 kt(const isect &i) const { return _kt; }
+    __host__ __device__ f4 kt(const isect &i) const { return _kt; }
 
     __host__ __device__ float index(const isect &i) const { return _index[0]; }
 
-    void setEmissive(const glm::vec3 &ke) { _ke = ke; }
+    void setEmissive(const f4 &ke) { _ke = ke; }
 
-    void setDiffuse(const glm::vec3 &kd) { _kd = kd; }
+    void setDiffuse(const f4 &kd) { _kd = kd; }
 
-    void setReflective(const glm::vec3 &kr) { _kr = kr; }
+    void setReflective(const f4 &kr) { _kr = kr; }
 
-    void setTransmissive(const glm::vec3 &kt) { _kt = kt; }
+    void setTransmissive(const f4 &kt) { _kt = kt; }
 
-    void setIndex(const glm::vec3 &index) { _index = index; }
+    void setIndex(const f4 &index) { _index = index; }
 
 private:
-    glm::vec3 _ke = glm::vec3(0);
-    glm::vec3 _kd = glm::vec3(0);
-    glm::vec3 _kr = glm::vec3(0);
-    glm::vec3 _kt = glm::vec3(0);
-    glm::vec3 _index = glm::vec3(1.0);
+    f4 _ke;
+    f4 _kd;
+    f4 _kr;
+    f4 _kt;
+    f4 _index = 1;
 };
 
 // This doesn't necessarily make sense for mapped materials

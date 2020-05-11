@@ -10,6 +10,7 @@ UNSET(src)
  
 find_package(CUDA QUIET REQUIRED)
 set(CUDA_SEPARABLE_COMPILATION ON)
+set(CUDA_NVCC_FLAGS -lineinfo)
 file(GLOB_RECURSE src
 		"*.h"
 		"*.cu")

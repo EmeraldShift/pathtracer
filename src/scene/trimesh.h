@@ -1,44 +1,34 @@
 #pragma once
 
-#include "geometry.h"
 #include "material.h"
 #include "transform.h"
 
 class Trimesh;
+class Geometry;
 
-class TrimeshFace : public Geometry {
+class TrimeshFace {
 public:
-    glm::vec3 getNormal() { return normal; }
+    __host__ __device__ bool intersect(const ray &r, isect &i) const;
 
-    __host__ __device__ static bool intersect(void *obj, ray &r, isect &i);
-
-    TrimeshFace *clone() const override;
-
-    static TrimeshFace *create(const Material &mat, Trimesh *parent, int a, int b, int c);
-
+    static Geometry *create(const Material &mat, Trimesh *parent, int a, int b, int c);
 private:
     TrimeshFace() = default;
 
-    BoundingBox computeLocalBoundingBox();
-
-    glm::vec3 vertices[3];
-    glm::vec3 v0 = glm::vec3();
-    glm::vec3 v1 = glm::vec3();
-    glm::vec3 v2 = glm::vec3();
-    glm::vec3 normal = glm::vec3();
-    glm::vec3 uInv = glm::vec3();
-    glm::vec3 vInv = glm::vec3();
-    glm::vec3 nInv = glm::vec3();
+    f4 vertices[3];
+    f4 v0, v1, v2;
+    f4 normal;
+    f4 uInv, vInv, nInv;
 
     bool hasMaterials = false;
     Material materials[3];
+
+    friend class Geometry;
 };
 
 class Trimesh {
 
 public:
-    explicit Trimesh(const Material &mat) : mat(mat) {
-    }
+    explicit Trimesh(const Material &mat) : mat(mat) {}
 
     ~Trimesh();
 
@@ -46,13 +36,13 @@ public:
 
     void setMaterial(const Material &m) { mat = m; }
 
-    void addVertex(const glm::vec3 &);
+    void addVertex(const f4 &v);
 
     void addMaterial(const Material &m);
 
     bool addFace(int a, int b, int c);
 
-    std::vector<TrimeshFace *> getFaces() { return faces; };
+    std::vector<Geometry *> getFaces() { return faces; };
 
     const char *doubleCheck();
 
@@ -60,15 +50,17 @@ public:
 
     static Trimesh *fromSquare(Material &mat, TransformNode *transform);
 
-private:
-    Trimesh *addVertices(glm::vec3 a, glm::vec3 b, glm::vec3 c);
+    friend class TrimeshFace;
 
-    Trimesh *addCube(glm::vec3 *v);
+private:
+    Trimesh *addVertices(f4 a, f4 b, f4 c);
+
+    Trimesh *addCube(f4 *v);
 
     friend class TrimeshFace;
 
     Material mat;
-    std::vector<glm::vec3> vertices;
-    std::vector<TrimeshFace *> faces;
+    std::vector<f4> vertices;
+    std::vector<Geometry *> faces;
     std::vector<Material> materials;
 };

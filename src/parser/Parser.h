@@ -74,7 +74,7 @@ private:
 
     void parseTrimesh(Scene *scene, TransformNode *transform, const Material &mat);
 
-    void parseFaces(std::list<glm::vec3> &faces);
+    void parseFaces(std::list<f4> &faces);
 
     // Parse transforms
     void parseTranslate(Scene *scene, TransformNode *transform, const Material &mat);
@@ -89,9 +89,9 @@ private:
     //   keyword = value;
     float parseScalarExpression();
 
-    glm::vec3 parseVec3dExpression();
+    f4 parseVec3dExpression();
 
-    glm::vec4 parseVec4dExpression();
+    f4 parseVec4dExpression();
 
     bool parseBooleanExpression();
 
@@ -99,9 +99,9 @@ private:
 
     std::string parseIdentExpression();
 
-    glm::vec3 parseVec3dMaterialParameter(Scene *scene);
+    f4 parseVec3dMaterialParameter(Scene *scene);
 
-    glm::vec3 parseScalarMaterialParameter(Scene *scene);
+    float parseScalarMaterialParameter(Scene *scene);
 
     // Helper functions for parsing things like vectors
     // and idents.
@@ -109,9 +109,9 @@ private:
 
     std::list<float> parseScalarList();
 
-    glm::vec3 parseVec3d();
+    f4 parseVec3d();
 
-    glm::vec4 parseVec4d();
+    f4 parseVec4d();
 
     bool parseBoolean();
 

@@ -35,7 +35,7 @@ class Scene {
 public:
     Scene() = default;
 
-    virtual ~Scene() = default;
+    ~Scene() = default;
 
     void add(Geometry *obj) {
         objects.emplace_back(obj);
@@ -63,11 +63,9 @@ public:
 
     Scene *clone() const;
 
-private:
+    BoundedVolumeHierarchy bvh;
     std::vector<Geometry *> objects;
     Camera camera;
-
-    BoundedVolumeHierarchy bvh;
 };
 
 #endif // __SCENE_H__

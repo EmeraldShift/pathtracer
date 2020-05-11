@@ -1,9 +1,10 @@
 #include "trimesh.h"
 
-#include <cmath>
-#include <iostream>
+#include "geometry.h"
 
-TrimeshFace *TrimeshFace::create(const Material &mat, Trimesh *parent, int a, int b, int c) {
+#include <cmath>
+
+Geometry *TrimeshFace::create(const Material &mat, Trimesh *parent, int a, int b, int c) {
     // Compute the face normal here, not on the fly
     auto a_coords = parent->vertices[a];
     auto b_coords = parent->vertices[b];
@@ -14,38 +15,35 @@ TrimeshFace *TrimeshFace::create(const Material &mat, Trimesh *parent, int a, in
     auto vcb = (b_coords - c_coords);
 
     // If this is a degenerate face, quit
-    if (glm::length(vab) == 0.0 || glm::length(vac) == 0.0 ||
-        glm::length(vcb) == 0.0)
+    if (f4m::length2(vab) == 0.0f
+        || f4m::length2(vac) == 0.0f
+        || f4m::length2(vcb) == 0.0f)
         return nullptr;
 
-    auto face = new TrimeshFace();
-    auto normal = glm::normalize(glm::cross(vab, vac));
-    auto inverse = glm::inverse(glm::dmat3(vab, vac, normal));
-    face->materials[0] = mat;
-    face->vertices[0] = a_coords;
-    face->vertices[1] = b_coords;
-    face->vertices[2] = c_coords;
-    face->normal = normal;
-    face->uInv = glm::dvec3(inverse[0][0], inverse[1][0], inverse[2][0]);
-    face->vInv = glm::dvec3(inverse[0][1], inverse[1][1], inverse[2][1]);
-    face->nInv = glm::dvec3(inverse[0][2], inverse[1][2], inverse[2][2]);
-    face->bounds = face->computeLocalBoundingBox();
-    if (!parent->materials.empty()) {
-        face->hasMaterials = true;
-        face->materials[0] = parent->materials[a];
-        face->materials[1] = parent->materials[b];
-        face->materials[2] = parent->materials[c];
-    }
-    return face;
-}
+    auto face = TrimeshFace();
+    auto normal = f4m::normalize(f4m::cross(vab, vac));
 
-BoundingBox TrimeshFace::computeLocalBoundingBox() {
-    BoundingBox bb;
-    bb.setMax(glm::max(vertices[0], vertices[1]));
-    bb.setMin(glm::min(vertices[0], vertices[1]));
-    bb.setMax(glm::max(bb.getMax(), vertices[2]));
-    bb.setMin(glm::min(bb.getMin(), vertices[2]));
-    return bb;
+    // Quick f4-escape hack: we don't have matrices
+    glm::vec3 glm_vab(vab[0], vab[1], vab[2]);
+    glm::vec3 glm_vac(vac[0], vac[1], vac[2]);
+    glm::vec3 glm_normal(normal[0], normal[1], normal[2]);
+    auto inverse = glm::inverse(glm::mat3(glm_vab, glm_vac, glm_normal));
+
+    face.materials[0] = mat;
+    face.vertices[0] = a_coords;
+    face.vertices[1] = b_coords;
+    face.vertices[2] = c_coords;
+    face.normal = normal;
+    face.uInv = {inverse[0][0], inverse[1][0], inverse[2][0]};
+    face.vInv = {inverse[0][1], inverse[1][1], inverse[2][1]};
+    face.nInv = {inverse[0][2], inverse[1][2], inverse[2][2]};
+    if (!parent->materials.empty()) {
+        face.hasMaterials = true;
+        face.materials[0] = parent->materials[a];
+        face.materials[1] = parent->materials[b];
+        face.materials[2] = parent->materials[c];
+    }
+    return new Geometry(face);
 }
 
 Trimesh::~Trimesh() {
@@ -53,7 +51,7 @@ Trimesh::~Trimesh() {
         delete f;
 }
 
-void Trimesh::addVertex(const glm::vec3 &v) {
+void Trimesh::addVertex(const f4 &v) {
     vertices.emplace_back(v);
 }
 
@@ -86,13 +84,11 @@ const char *Trimesh::doubleCheck() {
 }
 
 __host__ __device__
-bool TrimeshFace::intersect(void *obj, ray &r, isect &i) {
-    auto face = (TrimeshFace *)obj;
-
-    auto p = r.getPosition() - face->vertices[0];
+bool TrimeshFace::intersect(const ray &r, isect &i) const {
+    auto p = r.getPosition() - vertices[0];
     auto d = r.getDirection();
-    auto p_z = glm::dot(face->nInv, p);
-    auto d_z = glm::dot(face->nInv, d);
+    auto p_z = f4m::dot(nInv, p);
+    auto d_z = f4m::dot(nInv, d);
     if (p_z < 0 == d_z < 0)
         return false;
 
@@ -101,38 +97,38 @@ bool TrimeshFace::intersect(void *obj, ray &r, isect &i) {
         return false;
 
     auto hit = p + t * d;
-    auto u = glm::dot(face->uInv, hit); // p1
-    auto v = glm::dot(face->vInv, hit); // p2;
+    auto u = f4m::dot(uInv, hit); // p1
+    auto v = f4m::dot(vInv, hit); // p2;
     auto w = 1 - u - v; // p0
 
     if (u < 0 || u > 1 || v < 0 || v > 1 || u + v > 1)
         return false;
 
     i.setT(t);
-    i.setN(face->normal);
-    i.setUVCoordinates(glm::dvec2(u, v));
-    if (face->hasMaterials) {
-        Material m0 = w * face->materials[0];
-        Material m1 = u * face->materials[1];
-        Material m2 = v * face->materials[2];
+    i.setN(normal);
+    i.setUVCoordinates({u, v});
+    if (hasMaterials) {
+        Material m0 = w * materials[0];
+        Material m1 = u * materials[1];
+        Material m2 = v * materials[2];
         m0 += m1;
         m0 += m2;
         i.setMaterial(m0);
     } else {
-        i.setMaterial(face->materials[0]);
+        i.setMaterial(materials[0]);
     }
     return true;
 }
 
 
-Trimesh *Trimesh::addVertices(glm::vec3 a, glm::vec3 b, glm::vec3 c) {
+Trimesh *Trimesh::addVertices(f4 a, f4 b, f4 c) {
     addVertex(a);
     addVertex(b);
     addVertex(c);
     return this;
 }
 
-Trimesh *Trimesh::addCube(glm::vec3 *v) {
+Trimesh *Trimesh::addCube(f4 *v) {
     addVertices(v[0], v[1], v[2]);
     addVertices(v[3], v[2], v[1]);
     addVertices(v[4], v[6], v[5]);
@@ -159,7 +155,7 @@ Trimesh *Trimesh::fromBox(Material &mat, TransformNode *transform) {
     auto p101 = transform->localToGlobalCoords(glm::vec3(0.5, -0.5, 0.5));
     auto p110 = transform->localToGlobalCoords(glm::vec3(0.5, 0.5, -0.5));
     auto p111 = transform->localToGlobalCoords(glm::vec3(0.5, 0.5, 0.5));
-    glm::vec3 vertices[8] = {p000, p001, p010, p011, p100, p101, p110, p111};
+    f4 vertices[8] = {p000, p001, p010, p011, p100, p101, p110, p111};
     return (new Trimesh(mat))->addCube(vertices);
 }
 
@@ -172,13 +168,6 @@ Trimesh *Trimesh::fromSquare(Material &mat, TransformNode *transform) {
     auto p101 = transform->localToGlobalCoords(glm::vec3(0.5, -0.5, 0.001));
     auto p110 = transform->localToGlobalCoords(glm::vec3(0.5, 0.5, -0.001));
     auto p111 = transform->localToGlobalCoords(glm::vec3(0.5, 0.5, 0.001));
-    glm::vec3 vertices[8] = {p000, p001, p010, p011, p100, p101, p110, p111};
+    f4 vertices[8] = {p000, p001, p010, p011, p100, p101, p110, p111};
     return (new Trimesh(mat))->addCube(vertices);
-}
-
-TrimeshFace *TrimeshFace::clone() const {
-    TrimeshFace *d_face;
-    cudaMalloc(&d_face, sizeof(TrimeshFace));
-    cudaMemcpy(d_face, this, sizeof(TrimeshFace), cudaMemcpyHostToDevice);
-    return d_face;
 }

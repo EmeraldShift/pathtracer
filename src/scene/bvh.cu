@@ -1,5 +1,14 @@
 #include "bvh.h"
 
+bool Cluster::intersect(ray &r, isect &i) const {
+    if (obj) {
+        return obj->intersect(r, i);
+    } else {
+        return (left->bbox.intersect(r, i.getT()) && left->intersect(r, i))
+               | (right->bbox.intersect(r, i.getT()) && right->intersect(r, i));
+    }
+}
+
 /**
  * Compare two objects across a given axis.
  * @tparam Obj The type of object to compare
@@ -130,13 +139,13 @@ static Cluster *genCluster(std::vector<Geometry *> &xvec,
     }
     c->left = genCluster(xleft, yleft, zleft);
     c->right = genCluster(xright, yright, zright);
-    c->bbox = BoundingBox(glm::min(c->left->bbox.getMin(), c->right->bbox.getMin()),
-                          glm::max(c->left->bbox.getMax(), c->right->bbox.getMax()));
+    c->bbox = BoundingBox(f4m::min(c->left->bbox.getMin(), c->right->bbox.getMin()),
+                          f4m::max(c->left->bbox.getMax(), c->right->bbox.getMax()));
     return c;
 }
 
 void BoundedVolumeHierarchy::construct(std::vector<Geometry *> &objs) {
-    if (objs.size() == 0)
+    if (objs.empty())
         return;
 
     // Create sorted sets
@@ -169,10 +178,7 @@ bool BoundedVolumeHierarchy::traverseIterative(ray &r, isect &i) const {
     if (root == nullptr)
         return false;
     if (root->obj)
-        return root->obj->isSphere
-               ? Sphere::intersect(root->obj, r, i)
-               : TrimeshFace::intersect(root->obj, r, i);
-
+        return root->obj->intersect(r, i);
     bool have_one = false;
     Cluster *stack[64];
     Cluster **sp = stack;
@@ -181,20 +187,12 @@ bool BoundedVolumeHierarchy::traverseIterative(ray &r, isect &i) const {
     while (current) {
         bool overlapL = current->left->bbox.intersect(r, i.getT());
         bool overlapR = current->right->bbox.intersect(r, i.getT());
-        if (overlapL && current->left->obj) {
-            have_one |= current->left->obj->isSphere
-                    ? Sphere::intersect(current->left->obj, r, i)
-                    : TrimeshFace::intersect(current->left->obj, r, i);
-        }
-        if (overlapR && current->right->obj) {
-            have_one |= current->right->obj->isSphere
-                        ? Sphere::intersect(current->right->obj, r, i)
-                        : TrimeshFace::intersect(current->right->obj, r, i);
-        }
-
+        if (overlapL && current->left->obj)
+            have_one |= current->left->obj->intersect(r, i);
+        if (overlapR && current->right->obj)
+            have_one |= current->right->obj->intersect(r, i);
         bool traverseL = (overlapL && !current->left->obj);
         bool traverseR = (overlapR && !current->right->obj);
-
         if (!traverseL && !traverseR) {
             current = *--sp;
         } else {
