@@ -8,17 +8,17 @@ UNSET(src)
 #      FILE(STRINGS CMakeLists.sources src)
 #ENDIF()
 
-AUX_SOURCE_DIRECTORY(${pwd} src)
-AUX_SOURCE_DIRECTORY(${pwd}/fileio src)
-AUX_SOURCE_DIRECTORY(${pwd}/parser src)
-AUX_SOURCE_DIRECTORY(${pwd}/scene src)
-AUX_SOURCE_DIRECTORY(${pwd}/SceneObjects src)
-AUX_SOURCE_DIRECTORY(${pwd}/ui src)
-AUX_SOURCE_DIRECTORY(${pwd}/win32 src)
+#AUX_SOURCE_DIRECTORY(${pwd} src)
+#AUX_SOURCE_DIRECTORY(${pwd}/fileio src)
+#AUX_SOURCE_DIRECTORY(${pwd}/parser src)
+#AUX_SOURCE_DIRECTORY(${pwd}/scene src)
+#AUX_SOURCE_DIRECTORY(${pwd}/SceneObjects src)
+#AUX_SOURCE_DIRECTORY(${pwd}/ui src)
+#AUX_SOURCE_DIRECTORY(${pwd}/win32 src)
 #set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo")
-#file(GLOB_RECURSE src
-#		"*.h"
-#		"*.cu")
+file(GLOB_RECURSE src
+		"*.h"
+		"*.cu")
 
 add_executable(ray ${src})
 set_property(TARGET ray PROPERTY CUDA_SEPARABLE_COMPILATION ON)
