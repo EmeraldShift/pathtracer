@@ -37,13 +37,21 @@ public:
     ~Scene() = default;
 
     void add(Geometry *obj) {
+        actual.push_back(*obj);
         objects.emplace_back(obj);
     }
 
     template <typename T>
     void add(std::vector<T> objs) {
-        for (const auto &o : objs)
+        for (const auto &o : objs){
             objects.emplace_back(o);
+            actual.push_back(*o);
+        }
+    }
+
+    void updateObjects(){
+        for (int i = 0; i < actual.size(); i++)
+            objects[i] = &actual[i];
     }
 
     void constructBvh() {
@@ -66,6 +74,7 @@ public:
     BoundedVolumeHierarchy bvh;
     std::vector<Geometry *> objects;
     Camera camera;
+    std::vector<Geometry> actual;
 };
 
 #endif // __SCENE_H__

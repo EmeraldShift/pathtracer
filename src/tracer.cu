@@ -76,6 +76,9 @@ bool Tracer::loadScene(const char *fn) {
         return false;
     }
 
+    //ALL OBJECTS HAVE BEEN LOADED, UPDATE obj to contain pointers to actual
+    scene->updateObjects();
+
     if (scene)
         scene->constructBvh();
     return scene != nullptr;

@@ -7,7 +7,7 @@ Scene *Scene::clone() const {
 
     // Clone BVH root
     //BoundedVolumeHierarchy d_bvh = bvh.clone();
-    BoundedVolumeHierarchy d_bvh = bvh.flatten_clone();
+    BoundedVolumeHierarchy d_bvh = bvh.flatten_clone(actual);
     cudaMemcpy(&d_scene->bvh, &d_bvh, sizeof(BoundedVolumeHierarchy), cudaMemcpyHostToDevice);
     return d_scene;
 }

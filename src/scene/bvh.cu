@@ -70,7 +70,7 @@ static Cluster *genCluster(std::vector<Geometry *> &xvec,
 
     // Leaf node
     if (xvec.size() == 1) {
-        c->obj = xvec[0];
+        c->obj = xvec[0]; 
         c->bbox = BoundingBox(xvec[0]->getBoundingBox().getMin(), xvec[0]->getBoundingBox().getMax());
         return c;
     }
@@ -152,7 +152,9 @@ void BoundedVolumeHierarchy::construct(std::vector<Geometry *> &objs) {
     auto xset = std::multiset<Geometry *, bool (*)(const Geometry *, const Geometry *)>(compare<0>);
     auto yset = std::multiset<Geometry *, bool (*)(const Geometry *, const Geometry *)>(compare<1>);
     auto zset = std::multiset<Geometry *, bool (*)(const Geometry *, const Geometry *)>(compare<2>);
-    for (auto f : objs) {
+    int i = 1; //one indexed bc we do checks on "nullness of obj"
+    for (Geometry * f : objs) {
+        f->index = i++; //set the index of this in objs
         xset.insert(f);
         yset.insert(f);
         zset.insert(f);
@@ -236,7 +238,7 @@ BoundedVolumeHierarchy BoundedVolumeHierarchy::clone() const {
 */
 void BoundedVolumeHierarchy::flatten() {
     //assumes BVH has been generated
-    int type = 0; //TODO optargs
+    int type = 2; //TODO optargs
 
     //recursively calculate offsets subtrees
     calculate_size(type);
@@ -367,20 +369,21 @@ void Cluster::update_children(Cluster* tree){
 }
 
 //uses CPU pointers, breaks ties so it will be accurate for GPU
-void Cluster::update_children_forGPU(Cluster* GPUtree){
+void Cluster::update_children_forGPU(Cluster* GPUtree, Geometry* GPUshapes){
 
     if (left != nullptr){
-        left->update_children_forGPU(GPUtree);
+        left->update_children_forGPU(GPUtree, GPUshapes);
         left = GPUtree + left_size;
     }
 
     if (right != nullptr){
-        right->update_children_forGPU(GPUtree);
+        right->update_children_forGPU(GPUtree, GPUshapes);
         right = GPUtree + right_size;
     }
 
     if (left == nullptr && right == nullptr){
-        obj = obj ? obj->clone() : nullptr;
+        int index = obj ? obj->index : -1;
+        obj = GPUshapes + (index-1); //makes it point to Geometry on GPU
     }
 
 }
@@ -389,16 +392,19 @@ void Cluster::update_children_forGPU(Cluster* GPUtree){
 /*
     copies a flattened BVH onto the GPU, updates the tree pointers to be relative to GPU array
 */
-BoundedVolumeHierarchy BoundedVolumeHierarchy::flatten_clone() const{
-    //mallocs array space  
+BoundedVolumeHierarchy BoundedVolumeHierarchy::flatten_clone(const std::vector<Geometry> &objs) const{
+    Geometry* d_shapes;
+    cudaMalloc(&d_shapes, sizeof(Geometry)*objs.size());
+
+    //mallocs array space for tree
     Cluster* d_begin;
     cudaMalloc(&d_begin, sizeof(Cluster)*size);
-
     //make tree relative to where it will exist in GPU
-    root->update_children_forGPU(d_begin);
-
+    root->update_children_forGPU(d_begin, d_shapes);
     //copies the tree into there
     cudaMemcpy(d_begin, root - root_index, sizeof(Cluster)*size, cudaMemcpyHostToDevice);
+    //copies geometries onto gpu
+    cudaMemcpy(d_shapes, objs.data(), sizeof(Geometry)*objs.size(), cudaMemcpyHostToDevice);
 
     BoundedVolumeHierarchy d_bvh;
     d_bvh.size = size;

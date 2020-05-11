@@ -30,7 +30,7 @@ struct Cluster {
     int flatten_move(Cluster* tree, int subtree, int type);
     int calculate_size();
     void update_children(Cluster* tree);
-    void update_children_forGPU(Cluster* GPUtree);
+    void update_children_forGPU(Cluster* GPUtree, Geometry* GPUshapes);
 };
 
 ////////////////////////
@@ -56,7 +56,7 @@ public:
     bool traverse(ray &r, isect &i) const;
 
     void flatten();
-    BoundedVolumeHierarchy flatten_clone() const;
+    BoundedVolumeHierarchy flatten_clone(const std::vector<Geometry> &objs) const;
 
     __host__ __device__ bool traverseIterative(ray &r, isect &i) const;
 

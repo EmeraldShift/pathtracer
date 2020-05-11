@@ -7,6 +7,7 @@
 
 #include <vector>
 
+
 class Geometry {
 public:
     Geometry(const Sphere &sphere) : obj(sphere), isSphere(true) {
@@ -29,9 +30,12 @@ public:
 
     Geometry *clone() const;
 
-private:
     bool isSphere = false;
     BoundingBox bounds;
+    int index = -1;
+
+private:
+
 
     union obj {
         obj(const Sphere &sphere) : sphere(sphere) {}
