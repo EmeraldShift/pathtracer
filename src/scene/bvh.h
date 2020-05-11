@@ -55,6 +55,7 @@ public:
     bool traverse(ray &r, isect &i) const;
 
     void flatten();
+    BoundedVolumeHierarchy flatten_clone() const;
 
     __host__ __device__ bool traverseIterative(ray &r, isect &i) const;
 

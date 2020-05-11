@@ -234,7 +234,7 @@ BoundedVolumeHierarchy BoundedVolumeHierarchy::clone() const {
     Returns a BoundedVolumeHierarchy where the nodes are in contigous memory
     Nodes are in inorder traversal, so that entire subtrees can be cached together
 */
-void BoundedVolumeHeirarchy::flatten() {
+void BoundedVolumeHierarchy::flatten() {
     //assumes BVH has been generated
     int type = 0; //TODO optargs
 
@@ -248,10 +248,10 @@ void BoundedVolumeHeirarchy::flatten() {
     update_children();
 
 }
-void BoundedVolumeHeirarchy::flatten_move(int type) {
+void BoundedVolumeHierarchy::flatten_move(int type) {
     //malloc tree
     //TODO DIFFERENT FOR BFS
-    Cluster * tree = malloc(size*sizeof(Cluster));
+    Cluster * tree = (Cluster*)malloc(size*sizeof(Cluster));
 
     //get loc of root in copied array
     int root_loc = root->flatten_move(tree, 0, type);
@@ -262,7 +262,7 @@ void BoundedVolumeHeirarchy::flatten_move(int type) {
     root_index = root_loc;
 }
 
-void BoundedVolumeHeirarchy::calculate_size(int type) {
+void BoundedVolumeHierarchy::calculate_size(int type) {
     size = root->calculate_size();
 }
 
@@ -276,20 +276,20 @@ int Cluster::flatten_move(Cluster* tree, int subtree, int type){
     switch (type){
         case 0:{ //inorder
             start_left = subtree;
-            start_right = subtree + left_offset + 1;
-            root_loc = subtree + left_offset;
+            start_right = subtree + left_size + 1;
+            root_loc = subtree + left_size;
             break;
         }
         case 1:{ //preorder
             start_left = subtree + 1;
-            start_right = subtree + left_offset + 1;
+            start_right = subtree + left_size + 1;
             root_loc = subtree;
             break;
         }
         case 2:{ //postorder
             start_left = subtree;
-            start_right = subtree+left_offset;
-            root_loc = subtree+left_offset + right_offset;
+            start_right = subtree+left_size;
+            root_loc = subtree+left_size + right_size;
             break;
         }
         case 3:{ //BFS, have to get max depth tho
@@ -345,7 +345,7 @@ int Cluster::calculate_size()  {
     To be used on the GPU, must update relative to GPU mem location
     might be able to do on CPU, after you have the device pointer just write stuff, AND THEN COPY
 */
-void BoundedVolumeHeirarchy::update_children(){
+void BoundedVolumeHierarchy::update_children(){
     Cluster* tree = root - root_index;
     //assumes the root is at least point to the right place
     root->update_children(tree);
@@ -370,16 +370,16 @@ void Cluster::update_children(Cluster* tree){
     Assumes there will be a call to update_children on GPU BEFORE USAGE of struct
     can't update pointers until on GPU
 */
-BoundedVolumeHeirarchy BoundedVolumeHeirarchy::flatten_clone() const{
+BoundedVolumeHierarchy BoundedVolumeHierarchy::flatten_clone() const{
     //mallocs array space  
-    Cluster d_begin;
+    Cluster* d_begin;
     cudaMalloc(&d_begin, sizeof(Cluster)*size);
     cudaMemcpy(d_begin, root - root_index, sizeof(Cluster)*size, cudaMemcpyHostToDevice);
 
-    BoundedVolumeHeirarchy d_bvh;
-    d_bvh->size = size;
-    d_bvh->root_index = root_index;
-    d_bvh->root = d_begin + root_index;
+    BoundedVolumeHierarchy d_bvh;
+    d_bvh.size = size;
+    d_bvh.root_index = root_index;
+    d_bvh.root = d_begin + root_index;
 
     return d_bvh; //ready for copy onto the device somewhere!
 }
