@@ -30,6 +30,7 @@ struct Cluster {
     int flatten_move(Cluster* tree, int subtree, int type);
     int calculate_size();
     void update_children(Cluster* tree);
+    void update_children_forGPU(Cluster* GPUtree);
 };
 
 ////////////////////////

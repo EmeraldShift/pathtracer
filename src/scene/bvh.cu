@@ -342,8 +342,6 @@ int Cluster::calculate_size()  {
 /*
     Assumes that every node is already flattened, updates pointers relative to the root using offsets L,F
     For CPU, this call made in flatten is sufficient
-    To be used on the GPU, must update relative to GPU mem location
-    might be able to do on CPU, after you have the device pointer just write stuff, AND THEN COPY
 */
 void BoundedVolumeHierarchy::update_children(){
     Cluster* tree = root - root_index;
@@ -364,16 +362,31 @@ void Cluster::update_children(Cluster* tree){
 
 }
 
+//uses CPU pointers, breaks ties so it will be accurate for GPU
+void Cluster::update_children_forGPU(Cluster* GPUtree){
+    if (left != nullptr){
+        left->update_children(GPUtree);
+        left = GPUtree + left_size;
+    }
+
+    if (right != nullptr){
+        right->update_children(GPUtree);
+        right = GPUtree + right_size;
+    }
+
+}
+
 
 /*
-    copies a flattened BVH onto the GPU
-    Assumes there will be a call to update_children on GPU BEFORE USAGE of struct
-    can't update pointers until on GPU
+    copies a flattened BVH onto the GPU, updates the tree pointers to be relative to GPU array
 */
 BoundedVolumeHierarchy BoundedVolumeHierarchy::flatten_clone() const{
     //mallocs array space  
     Cluster* d_begin;
     cudaMalloc(&d_begin, sizeof(Cluster)*size);
+    //make tree relative to where it will exist in GPU
+    root->update_children_forGPU(d_begin);
+    //copies the tree into there
     cudaMemcpy(d_begin, root - root_index, sizeof(Cluster)*size, cudaMemcpyHostToDevice);
 
     BoundedVolumeHierarchy d_bvh;
