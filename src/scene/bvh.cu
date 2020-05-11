@@ -224,3 +224,162 @@ BoundedVolumeHierarchy BoundedVolumeHierarchy::clone() const {
     d_bvh.root = root->clone();
     return d_bvh;
 }
+
+//TODO BVH flatten and then the order we're doing threads
+//cache line 128 on GPU, 32 on CPU, make 32-byte alligned if possible
+//make it a union of inner node and child?
+
+/*
+    Takes a non-flat tree and flattens it on the CPU, calculates L,R offset, frees node memory
+    Returns a BoundedVolumeHierarchy where the nodes are in contigous memory
+    Nodes are in inorder traversal, so that entire subtrees can be cached together
+*/
+void BoundedVolumeHeirarchy::flatten() {
+    //assumes BVH has been generated
+    int type = 0; //TODO optargs
+
+    //recursively calculate offsets subtrees
+    calculate_size(type);
+
+    //copy in specified order into array
+    flatten_move(type);
+
+    //update_children pointers so left, right actually point in array
+    update_children();
+
+}
+void BoundedVolumeHeirarchy::flatten_move(int type) {
+    //malloc tree
+    //TODO DIFFERENT FOR BFS
+    Cluster * tree = malloc(size*sizeof(Cluster));
+
+    //get loc of root in copied array
+    int root_loc = root->flatten_move(tree, 0, type);
+    free(root);
+
+    //set root pointer to place in array
+    root = tree + root_loc;
+    root_index = root_loc;
+}
+
+void BoundedVolumeHeirarchy::calculate_size(int type) {
+    size = root->calculate_size();
+}
+
+//subtree specifies the start index of subtree in array tree
+//copies tree into array in order specified
+//frees children after they have been copied
+int Cluster::flatten_move(Cluster* tree, int subtree, int type){
+    int root_loc, left_index, right_index = -1;
+    int start_left, start_right;
+
+    switch (type){
+        case 0:{ //inorder
+            start_left = subtree;
+            start_right = subtree + left_offset + 1;
+            root_loc = subtree + left_offset;
+            break;
+        }
+        case 1:{ //preorder
+            start_left = subtree + 1;
+            start_right = subtree + left_offset + 1;
+            root_loc = subtree;
+            break;
+        }
+        case 2:{ //postorder
+            start_left = subtree;
+            start_right = subtree+left_offset;
+            root_loc = subtree+left_offset + right_offset;
+            break;
+        }
+        case 3:{ //BFS, have to get max depth tho
+            break;
+        }
+    }
+
+
+    //if had no left || right children to begin with, still doesnt
+    if (left != nullptr){
+        left_index = left->flatten_move(tree, start_left, type);
+        free(left);
+        left = tree + left_index;
+    }
+
+    if (right != nullptr){
+        right_index = right->flatten_move(tree, start_right, type);
+        free(right);
+        right = tree + right_index;
+    }
+
+    //repurposes x_size to be the abs index of the child
+    left_size = left_index;
+    right_size = right_index;
+
+    //copy self into location
+    memcpy(tree + root_loc, this, sizeof(Cluster));
+    return root_loc;
+
+}
+
+//flattens subtree rooted at Cluster, returns number of elements in subtree, inclusive of root
+//calculates L, R offsets 
+int Cluster::calculate_size()  {
+    if (left == nullptr) 
+        left_size = 0;
+    else
+        left_size = left->calculate_size();
+    
+    if (right == nullptr)
+        right_size = 0;
+    else
+        right_size = right->calculate_size();
+
+    return 1 + left_size + right_size;
+
+}
+
+
+/*
+    Assumes that every node is already flattened, updates pointers relative to the root using offsets L,F
+    For CPU, this call made in flatten is sufficient
+    To be used on the GPU, must update relative to GPU mem location
+    might be able to do on CPU, after you have the device pointer just write stuff, AND THEN COPY
+*/
+void BoundedVolumeHeirarchy::update_children(){
+    Cluster* tree = root - root_index;
+    //assumes the root is at least point to the right place
+    root->update_children(tree);
+}
+
+void Cluster::update_children(Cluster* tree){
+    if (left != nullptr){
+        left = tree + left_size;
+        left->update_children(tree);
+    }
+
+    if (right != nullptr){
+        right = tree + right_size;
+        right->update_children(tree);
+    }
+
+}
+
+
+/*
+    copies a flattened BVH onto the GPU
+    Assumes there will be a call to update_children on GPU BEFORE USAGE of struct
+    can't update pointers until on GPU
+*/
+BoundedVolumeHeirarchy BoundedVolumeHeirarchy::flatten_clone() const{
+    //mallocs array space  
+    Cluster d_begin;
+    cudaMalloc(&d_begin, sizeof(Cluster)*size);
+    cudaMemcpy(d_begin, root - root_index, sizeof(Cluster)*size, cudaMemcpyHostToDevice);
+
+    BoundedVolumeHeirarchy d_bvh;
+    d_bvh->size = size;
+    d_bvh->root_index = root_index;
+    d_bvh->root = d_begin + root_index;
+
+    return d_bvh; //ready for copy onto the device somewhere!
+}

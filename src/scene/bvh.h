@@ -14,14 +14,22 @@
  * in the bounding volume hierarchy.
  * @tparam Obj The type of primitive to store
  */
+
+ //64 BYTES
 struct Cluster {
     BoundingBox bbox;
     Cluster *left, *right;
     Geometry *obj;
+    int left_size, right_size;
+
+    int flatten();
 
     bool intersect(ray &r, isect &i) const;
 
     Cluster *clone() const;
+    int flatten_move(Cluster* tree, int subtree, int type);
+    int calculate_size();
+    void update_children(Cluster* tree);
 };
 
 ////////////////////////
@@ -38,13 +46,22 @@ struct Cluster {
  */
 class BoundedVolumeHierarchy {
     Cluster *root = nullptr;
+    int size = 0;
+    int root_index = 0;
 
 public:
     void construct(std::vector<Geometry *> &objs);
 
     bool traverse(ray &r, isect &i) const;
 
+    void flatten();
+
     __host__ __device__ bool traverseIterative(ray &r, isect &i) const;
 
     BoundedVolumeHierarchy clone() const;
+
+private:
+    void flatten_move(int type);
+    void calculate_size(int type);
+    void update_children();
 };
