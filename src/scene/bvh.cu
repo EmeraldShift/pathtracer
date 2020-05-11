@@ -262,9 +262,6 @@ void BoundedVolumeHierarchy::flatten_move(int type) {
     root_index = root_loc;
 }
 
-void BoundedVolumeHierarchy::calculate_size(int type) {
-    size = root->calculate_size();
-}
 
 //subtree specifies the start index of subtree in array tree
 //copies tree into array in order specified
@@ -273,6 +270,7 @@ int Cluster::flatten_move(Cluster* tree, int subtree, int type){
     int root_loc, left_index, right_index = -1;
     int start_left, start_right;
 
+    //determine where left, right subtrees begin
     switch (type){
         case 0:{ //inorder
             start_left = subtree;
@@ -298,7 +296,8 @@ int Cluster::flatten_move(Cluster* tree, int subtree, int type){
     }
 
 
-    //if had no left || right children to begin with, still doesnt
+    //update subtrees first
+    //if no subtrees, left & right still nullptr
     if (left != nullptr){
         left_index = left->flatten_move(tree, start_left, type);
         free(left);
@@ -311,14 +310,18 @@ int Cluster::flatten_move(Cluster* tree, int subtree, int type){
         right = tree + right_index;
     }
 
-    //repurposes x_size to be the abs index of the child
+    //repurposes x_size to be the abs index of the child, for update_children
     left_size = left_index;
     right_size = right_index;
 
-    //copy self into location
+    //copy self into location in array, so can free heap memory
     memcpy(tree + root_loc, this, sizeof(Cluster));
     return root_loc;
 
+}
+
+void BoundedVolumeHierarchy::calculate_size(int type) {
+    size = root->calculate_size();
 }
 
 //flattens subtree rooted at Cluster, returns number of elements in subtree, inclusive of root
@@ -350,6 +353,7 @@ void BoundedVolumeHierarchy::update_children(){
 }
 
 void Cluster::update_children(Cluster* tree){
+    //recall size was repurposed to be indices
     if (left != nullptr){
         left = tree + left_size;
         left->update_children(tree);
@@ -364,14 +368,19 @@ void Cluster::update_children(Cluster* tree){
 
 //uses CPU pointers, breaks ties so it will be accurate for GPU
 void Cluster::update_children_forGPU(Cluster* GPUtree){
+
     if (left != nullptr){
-        left->update_children(GPUtree);
+        left->update_children_forGPU(GPUtree);
         left = GPUtree + left_size;
     }
 
     if (right != nullptr){
-        right->update_children(GPUtree);
+        right->update_children_forGPU(GPUtree);
         right = GPUtree + right_size;
+    }
+
+    if (left == nullptr && right == nullptr){
+        obj = obj ? obj->clone() : nullptr;
     }
 
 }
@@ -384,8 +393,10 @@ BoundedVolumeHierarchy BoundedVolumeHierarchy::flatten_clone() const{
     //mallocs array space  
     Cluster* d_begin;
     cudaMalloc(&d_begin, sizeof(Cluster)*size);
+
     //make tree relative to where it will exist in GPU
     root->update_children_forGPU(d_begin);
+
     //copies the tree into there
     cudaMemcpy(d_begin, root - root_index, sizeof(Cluster)*size, cudaMemcpyHostToDevice);
 
