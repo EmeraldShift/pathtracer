@@ -67,3 +67,19 @@ private:
     void calculate_size(int type);
     void update_children();
 };
+
+/**
+ * Compare two objects across a given axis.
+ * @tparam Obj The type of object to compare
+ * @tparam compareFunction The function used to perform the comparison
+ * @tparam i The axis across which to measure
+ * @param lhs The first object
+ * @param rhs The second object
+ * @return The logical difference between the two objects,
+ * according to the comparison function
+ */
+template<int i>
+static bool compare(const Geometry lhs, const Geometry rhs) {
+    return ((lhs.getBoundingBox().getMax() + lhs.getBoundingBox().getMin()) / 2.0f)[i]
+           < ((rhs.getBoundingBox().getMax() + rhs.getBoundingBox().getMin()) / 2.0f)[i];
+}

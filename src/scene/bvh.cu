@@ -19,11 +19,11 @@ bool Cluster::intersect(ray &r, isect &i) const {
  * @return The logical difference between the two objects,
  * according to the comparison function
  */
-template<int i>
-static bool compare(const Geometry *lhs, const Geometry *rhs) {
-    return ((lhs->getBoundingBox().getMax() + lhs->getBoundingBox().getMin()) / 2.0f)[i]
-           < ((rhs->getBoundingBox().getMax() + rhs->getBoundingBox().getMin()) / 2.0f)[i];
-}
+ template<int i>
+ static bool compare(const Geometry *lhs, const Geometry *rhs) {
+     return ((lhs->getBoundingBox().getMax() + lhs->getBoundingBox().getMin()) / 2.0f)[i]
+            < ((rhs->getBoundingBox().getMax() + rhs->getBoundingBox().getMin()) / 2.0f)[i];
+ }
 
 /**
  * Find the spread (max-min) of a given vector, across a given axis.
@@ -238,7 +238,7 @@ BoundedVolumeHierarchy BoundedVolumeHierarchy::clone() const {
 */
 void BoundedVolumeHierarchy::flatten() {
     //assumes BVH has been generated
-    int type = 2; //TODO optargs
+    int type = 1; //TODO optargs
 
     //recursively calculate offsets subtrees
     calculate_size(type);

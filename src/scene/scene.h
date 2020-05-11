@@ -50,6 +50,10 @@ public:
     }
 
     void updateObjects(){
+
+        //TODO stable sort by x and then by y
+        std::sort(actual.begin(), actual.end(), compare<2>);
+        std::sort(actual.begin(), actual.end(), compare<1>);
         for (int i = 0; i < actual.size(); i++)
             objects[i] = &actual[i];
     }
