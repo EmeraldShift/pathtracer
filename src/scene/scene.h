@@ -22,7 +22,6 @@
 #include "ray.h"
 #include "bvh.h"
 #include "transform.h"
-#include "../gl.h"
 
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>

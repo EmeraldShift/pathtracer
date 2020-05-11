@@ -2,7 +2,6 @@
 #include "cubeMap.h"
 #include "ray.h"
 #include "../ui/TraceUI.h"
-#include <glm/gtx/io.hpp>
 
 f4 CubeMap::getColor(const ray& r) const {
 

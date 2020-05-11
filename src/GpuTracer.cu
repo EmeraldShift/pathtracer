@@ -1,13 +1,8 @@
 #include "tracer.h"
 
 #include "scene/geometry.h"
-#include "scene/material.h"
 #include "scene/scene.h"
-#include "scene/ray.h"
 
-#include <math.h>
-#include <iostream>
-#include <curand.h>
 #include <curand_kernel.h>
 #include "cuda_profiler_api.h"
 

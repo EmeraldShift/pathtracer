@@ -7,7 +7,8 @@ IF (WIN32)
 	endif()
 ENDIF ()
 
-project(GLSL)
+project(GLSL LANGUAGES CUDA CXX)
+add_compile_options("$<$<COMPILE_LANGUAGE:CUDA>:-lineinfo>")
 
 FILE(GLOB cmakes ${CMAKE_SOURCE_DIR}/cmake/*.cmake)
 FOREACH(cmake ${cmakes})

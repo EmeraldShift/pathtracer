@@ -1,10 +1,7 @@
 #pragma once
 
-#include "../gl.h"
 #include "material.h"
 #include "../vec.h"
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
 #include <memory>
 
 class MaterialObject;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include "../gl.h"
 #include "../vec.h"
 #include <glm/vec3.hpp>
 

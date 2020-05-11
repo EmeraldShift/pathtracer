@@ -1,7 +1,6 @@
 #pragma once
 
 #include "geometry.h"
-#include "../gl.h"
 #include "ray.h"
 #include "bbox.h"
 #include "sphere.h"

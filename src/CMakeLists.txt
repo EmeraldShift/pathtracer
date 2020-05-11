@@ -7,15 +7,21 @@ UNSET(src)
 #IF (EXISTS CMakeLists.sources)
 #      FILE(STRINGS CMakeLists.sources src)
 #ENDIF()
- 
-find_package(CUDA QUIET REQUIRED)
-set(CUDA_SEPARABLE_COMPILATION ON)
-set(CUDA_NVCC_FLAGS -lineinfo)
-file(GLOB_RECURSE src
-		"*.h"
-		"*.cu")
 
-cuda_add_executable(ray ${src})
+AUX_SOURCE_DIRECTORY(${pwd} src)
+AUX_SOURCE_DIRECTORY(${pwd}/fileio src)
+AUX_SOURCE_DIRECTORY(${pwd}/parser src)
+AUX_SOURCE_DIRECTORY(${pwd}/scene src)
+AUX_SOURCE_DIRECTORY(${pwd}/SceneObjects src)
+AUX_SOURCE_DIRECTORY(${pwd}/ui src)
+AUX_SOURCE_DIRECTORY(${pwd}/win32 src)
+#set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo")
+#file(GLOB_RECURSE src
+#		"*.h"
+#		"*.cu")
+
+add_executable(ray ${src})
+set_property(TARGET ray PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 message(STATUS "ray added, files ${src}")
 
