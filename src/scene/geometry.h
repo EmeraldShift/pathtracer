@@ -45,4 +45,6 @@ private:
         Sphere sphere;
         TrimeshFace face;
     } obj;
+
+    int64_t filler[4];
 };
