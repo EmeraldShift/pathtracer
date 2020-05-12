@@ -160,7 +160,7 @@ tracePixel(Scene *scene, f4 *buffer, unsigned width, unsigned height, unsigned d
 
 void GpuTracer::traceImage(int width, int height) {
     cudaProfilerStart();
-    std::cout<<width<<" "<<height<<std::endl;
+
     // Allocate a buffer of color vectors per pixel
     auto size = width * height;
     auto raw = new f4[size];
