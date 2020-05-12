@@ -46,5 +46,5 @@ private:
         TrimeshFace face;
     } obj;
 
-    int64_t filler[4];
+    //int64_t filler[4];
 };
