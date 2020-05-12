@@ -123,9 +123,21 @@ traceRay(Scene *scene, ray &r, int depth, curandState &state) {
 
 __global__ static void
 tracePixel(Scene *scene, f4 *buffer, unsigned width, unsigned height, unsigned depth, unsigned samples) {
-    unsigned idx = threadIdx.x + blockIdx.x * blockDim.x;
-    unsigned x = idx % width;
-    unsigned y = idx / width;
+    //unsigned idx = threadIdx.x + blockIdx.x * blockDim.x;
+    // unsigned x = idx % width; //threadID controls x
+    // unsigned y = idx / width; //blockId controls y
+
+    //alt
+    int row_in = threadIdx.x / 8;
+    int col_in  = threadIdx.x % 8;
+    int row_out = blockIdx.x /64;
+    int col_out = blockIdx.x % 64;
+
+    int x = col_in + col_out*8;
+    int y = row_in + row_out*8;
+
+    unsigned idx = x + y*width;
+
     if (idx < width * height) {
         curandState state;
         curand_init((unsigned long long) clock() + idx, 0, 0, &state);
@@ -148,6 +160,7 @@ tracePixel(Scene *scene, f4 *buffer, unsigned width, unsigned height, unsigned d
 
 void GpuTracer::traceImage(int width, int height) {
     cudaProfilerStart();
+    std::cout<<width<<" "<<height<<std::endl;
     // Allocate a buffer of color vectors per pixel
     auto size = width * height;
     auto raw = new f4[size];
