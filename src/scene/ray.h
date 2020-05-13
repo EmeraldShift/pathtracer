@@ -56,11 +56,6 @@ public:
         invdir = 1.0 / dir;
     };
 
-    __host__ __device__ ray(const ray &r) {
-        pos = r.pos;
-        dir = r.dir;
-        invdir = r.invdir;
-    };
 
     __host__ __device__ ray() = default;
 

@@ -32,7 +32,71 @@ randomVecFromHemisphere(f4 normal, curandState &state) {
     return sin_t * cos_p * basis.a + sin_t * sin_p * basis.b + cos_t * normal;
 }
 
-/**
+
+
+ struct State{
+    int count; //count of samples already initiated
+    f4 sum;
+};
+
+ __device__ static
+ void atomicAddf4(f4& result, f4& eps){
+     for (int i = 0; i < 4; i ++){
+        atomicAdd(&result[i], eps[i]);
+     }
+
+ }
+
+ //returns true if successfully generated a new ray
+ __device__ static bool
+ genRay(Scene* scene, ray& r, f4& thresh, f4& color, int& depth, int og_depth, int samples, int& index, curandState &state, State* cache, int w, int h){
+    //check State at current index (read)
+    State s = cache[index];
+    int old = 0;
+    
+    while (true){
+        //more to sample for this pixel
+        if (s.count > 0 && (old = atomicAdd(&(cache[index].count), -1)) > 0){
+            old--; //needed for below to be right
+
+            //calculate the pixel
+            int sx = old / samples;
+            int sy = old % samples;
+
+            int row_in = index / 8;
+            int col_in  = index % 8;
+            int row_out = blockIdx.x /64;
+            int col_out = blockIdx.x % 64;
+        
+            int x = col_in + col_out*8;
+            int y = row_in + row_out*8;
+            unsigned idx = x + y*w;
+    
+            auto xx = float(x) - 0.5f + (1 + 2 * sx) / (2.0f * samples);
+            auto yy = float(y) - 0.5f + (1 + 2 * sy) / (2.0f * samples);
+
+            //generate the new ray
+            scene->getCamera().rayThrough(xx / float(w), yy / float(h), r);
+    
+            //new randomness
+            curand_init((unsigned long long) clock() + idx, 0, 0, &state);
+            //refresh thresh, color, depth
+            thresh.vec = make_float4(1.0f, 1.0f, 1.0f, 1.0f);
+            color.vec = make_float4(0.0f, 0.0f, 0.0f, 0.0f);
+            depth = og_depth;
+            return true;
+        } else{
+            //try to find one that works
+            index = (index +1 )% 64;
+            if (index == threadIdx.x) return false; //looped all the way back, all samples in progress or done
+            s = cache[index];
+        }
+
+    }
+
+ }
+
+ /**
  * An iterative version of the CPU ray tracing algorithm. For up to depth
  * iterations, the ray is intersected with the scene, and a random fate
  * is selected. The ray can either reflect diffusely or semi-diffusely,
@@ -49,53 +113,51 @@ randomVecFromHemisphere(f4 normal, curandState &state) {
  * @return
  */
 
- //returns true if successfully generated a new ray
- __device__ static bool
- genRay(ray& r, f4& thresh, f4& color, int& depth, int og_depth, int& index, curandState &state, ){
-    //check State at current index (read)
-    //if count < sample* sample (check atomic add return) && x, y != -1
-    //atomic add to count
-    //sx = count / samples;
-    //sy = count % samples;
-    //gen ray, restart thingies
-    //else
-    //set visited on current
-    //loop over rest until find one with bit not set, then do the above
-    //if you hit the one = threadIdx, then return false
-    auto xx = float(x) - 0.5f + (1 + 2 * sx) / (2.0f * samples);
-    auto yy = float(y) - 0.5f + (1 + 2 * sy) / (2.0f * samples);
-    scene->getCamera().rayThrough(xx / float(width), yy / float(height), r);
- }
-__device__ static f4
-traceRay(Scene *scene, ray &r, int depth, curandState &state) {
+__device__ static void
+traceRay(Scene *scene, int depth, State* cache, int w, int h, unsigned samples) {
     f4 color;
     f4 thresh(1);
     int og_depth = depth;
     int pixel = threadIdx.x;
+    ray r;
+    curandState state;
     
     while (true) {
         isect i;
-        if (f4m::length2(thresh) < 3.0f * 12.0f / 255.0f / 255.0f){
-            //genray
-        }
 
-        // Stop tracing if we exceed depth limit
-        if (depth < 0) {
+        bool tryIt = true;
+
+        float len = f4m::length2(thresh);
+        if (len < 3.0f * 12.0f / 255.0f / 255.0f){
+            //add contribution
+            atomicAddf4(cache[pixel].sum, color);
+            tryIt = false; 
+        } else if (depth < 0) {
+            //add contribution
             color *= thresh * i.getMaterial().ke(i) * 32.0f;
             color = f4m::clamp(color, 0.0, 1.0);
-            cache[pixel] += color; //ATOOMIC ADD
-            //genray
+            atomicAddf4(cache[pixel].sum, color); 
+            tryIt = false;
         }
+
+        //did this to min divergence
+        if (!tryIt){
+            bool result =  genRay(scene, r, thresh, color, depth, og_depth, samples, pixel, state, cache, w, h);//genray
+            if (!result) break;
+        }
+
         // Stop tracing if we miss the scene
         if (!scene->intersectIterative(r, i)) {
+            //add contribution
             color += thresh;
             color = f4m::clamp(color, 0.0, 1.0);
-            cache[pixel] += color; //ATOOMIC ADD
-            //genray
+            atomicAddf4(cache[pixel].sum, color); 
+
+            bool result =  genRay(scene, r, thresh, color, depth, og_depth, samples, pixel, state, cache, w, h);//genray
+            if (!result) break;
             continue;
         }
 
-        
 
         auto hitInner = r.getPosition() + (i.getT() + RAY_EPSILON) * r.getDirection();
         auto hitOuter = r.getPosition() + (i.getT() - RAY_EPSILON) * r.getDirection();
@@ -147,15 +209,8 @@ traceRay(Scene *scene, ray &r, int depth, curandState &state) {
             depth--;
         }
     }
-    return color;
 }
-struct State{
-    int count; //count of samples already initiated
-    int x; //x, y of pixel being generated
-    int y;
-    f4 sum;
-    bool done; //if looped around an all progress, then terminate
-}
+
 __global__ static void
 tracePixel(Scene *scene, f4 *buffer, unsigned width, unsigned height, unsigned depth, unsigned samples) {
     //unsigned idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -174,27 +229,20 @@ tracePixel(Scene *scene, f4 *buffer, unsigned width, unsigned height, unsigned d
     int y = row_in + row_out*8;
 
     unsigned idx = x + y*width;
+    int max = samples*samples;
 
 
     if (idx < width * height) {
-        cache[threadIdx.x ] = State(0, x, y, f4(0));
+        cache[threadIdx.x] = {max, f4(0)};
     } else{
-        cache[threadId.x] = State(0, -1, -1, f4(0));
+        cache[threadIdx.x] = {0, f4(0)};
     }
-        curandState state;
-        curand_init((unsigned long long) clock() + idx, 0, 0, &state);
-        f4 sum;
 
-        // Trace a ray for each subpixel, add up, and normalize.
-        for (auto sx = 0; sx < samples; sx++) {
-            for (auto sy = 0; sy < samples; sy++) {
+    traceRay(scene, depth, cache, width, height, samples);
 
-            }
-        }
-    }
 
     if (idx < width * height)
-        buffer[idx] = cache[threadIdx.x].sum/(samples*samples);
+        buffer[idx] = cache[threadIdx.x].sum/(max);
 }
 
 void GpuTracer::traceImage(int width, int height) {
@@ -214,7 +262,7 @@ void GpuTracer::traceImage(int width, int height) {
 
     // Yeet the pixel buffer to the device, render, and fetch the values.
     cudaMemcpy(d_raw, raw, size * sizeof(f4), cudaMemcpyHostToDevice);
-    tracePixel<<<(size+threadsPerBlock-1)/threadsPerBlock, threadsPerBlock>>>(
+    tracePixel<<<(size+threadsPerBlock-1)/threadsPerBlock, threadsPerBlock, 64*sizeof(State)>>>(
             d_scene, d_raw, width, height, depth, samples);
     cudaDeviceSynchronize();
     cudaMemcpy(raw, d_raw, size * sizeof(f4), cudaMemcpyDeviceToHost);
