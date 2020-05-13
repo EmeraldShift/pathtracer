@@ -135,6 +135,7 @@ traceRay(Scene *scene, int depth, State* cache, int w, int h, unsigned samples) 
         float len = f4m::length2(thresh);
         if (tryIt && (len < 3.0f * 12.0f / 255.0f / 255.0f)){
             //add contribution
+            color = f4m::clamp(color, 0.0, 1.0);
             atomicAddf4(cache[pixel].sum, color);
             tryIt = false; 
         } else if (tryIt && depth < 0) {
