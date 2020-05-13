@@ -118,6 +118,7 @@ traceRay(Scene *scene, int depth, State* cache, int w, int h, unsigned samples) 
     f4 color;
     f4 thresh(1);
     int og_depth = depth;
+    bool tryIt = false;
     int pixel = threadIdx.x;
     ray r;
     curandState state;
@@ -125,14 +126,13 @@ traceRay(Scene *scene, int depth, State* cache, int w, int h, unsigned samples) 
     while (true) {
         isect i;
 
-        bool tryIt = true;
 
         float len = f4m::length2(thresh);
-        if (len < 3.0f * 12.0f / 255.0f / 255.0f){
+        if (tryIt && (len < 3.0f * 12.0f / 255.0f / 255.0f)){
             //add contribution
             atomicAddf4(cache[pixel].sum, color);
             tryIt = false; 
-        } else if (depth < 0) {
+        } else if (tryIt && depth < 0) {
             //add contribution
             color *= thresh * i.getMaterial().ke(i) * 32.0f;
             color = f4m::clamp(color, 0.0, 1.0);
@@ -155,8 +155,10 @@ traceRay(Scene *scene, int depth, State* cache, int w, int h, unsigned samples) 
 
             bool result =  genRay(scene, r, thresh, color, depth, og_depth, samples, pixel, state, cache, w, h);//genray
             if (!result) break;
+            tryIt = true;
             continue;
         }
+        tryIt = true;
 
 
         auto hitInner = r.getPosition() + (i.getT() + RAY_EPSILON) * r.getDirection();
