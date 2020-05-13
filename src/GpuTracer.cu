@@ -53,47 +53,43 @@ randomVecFromHemisphere(f4 normal, curandState &state) {
     //check State at current index (read)
     State s = cache[index];
     int old = 0;
-    
-    while (true){
-        //more to sample for this pixel
-        if (s.count > 0 && (old = atomicAdd(&(cache[index].count), -1)) > 0){
-            old--; //needed for below to be right
-
-            //calculate the pixel
-            int sx = old / samples;
-            int sy = old % samples;
-
-            int row_in = index / 8;
-            int col_in  = index % 8;
-            int row_out = blockIdx.x /64;
-            int col_out = blockIdx.x % 64;
-        
-            int x = col_in + col_out*8;
-            int y = row_in + row_out*8;
-            unsigned idx = x + y*w;
-    
-            auto xx = float(x) - 0.5f + (1 + 2 * sx) / (2.0f * samples);
-            auto yy = float(y) - 0.5f + (1 + 2 * sy) / (2.0f * samples);
-
-            //generate the new ray
-            scene->getCamera().rayThrough(xx / float(w), yy / float(h), r);
-    
-            //new randomness
-            curand_init((unsigned long long) clock() + idx, 0, 0, &state);
-            //refresh thresh, color, depth
-            thresh.vec = make_float4(1.0f, 1.0f, 1.0f, 1.0f);
-            color.vec = make_float4(0.0f, 0.0f, 0.0f, 0.0f);
-            depth = og_depth;
-            return true;
-        } else{
+    while(!(s.count > 0 && (old = atomicAdd(&(cache[index].count), -1)) > 0)){
             //try to find one that works
             index = (index +1 )% 64;
             if (index == threadIdx.x) return false; //looped all the way back, all samples in progress or done
             s = cache[index];
         }
+        
+        
+    old--; //needed for below to be right
 
-    }
+    //calculate the pixel
+    int sx = old / samples;
+    int sy = old % samples;
 
+    int row_in = index / 8;
+    int col_in  = index % 8;
+    int row_out = blockIdx.x /64;
+    int col_out = blockIdx.x % 64;
+
+    int x = col_in + col_out*8;
+    int y = row_in + row_out*8;
+    unsigned idx = x + y*w;
+
+    auto xx = float(x) - 0.5f + (1 + 2 * sx) / (2.0f * samples);
+    auto yy = float(y) - 0.5f + (1 + 2 * sy) / (2.0f * samples);
+
+    //generate the new ray
+    scene->getCamera().rayThrough(xx / float(w), yy / float(h), r);
+
+    //new randomness
+    //refresh thresh, color, depth
+    thresh.vec = make_float4(1.0f, 1.0f, 1.0f, 1.0f);
+    color.vec = make_float4(0.0f, 0.0f, 0.0f, 0.0f);
+    depth = og_depth;
+    return true;
+
+    
  }
 
  /**
@@ -122,6 +118,15 @@ traceRay(Scene *scene, int depth, State* cache, int w, int h, unsigned samples) 
     int pixel = threadIdx.x;
     ray r;
     curandState state;
+    int row_in = threadIdx.x / 8;
+    int col_in  = threadIdx.x % 8;
+    int row_out = blockIdx.x /64;
+    int col_out = blockIdx.x % 64;
+
+    int x = col_in + col_out*8;
+    int y = row_in + row_out*8;
+    unsigned idx = x + y*w;
+    curand_init((unsigned long long) clock() + idx, 0, 0, &state);
     
     while (true) {
         isect i;
